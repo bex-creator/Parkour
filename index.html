@@ -378,6 +378,65 @@
 </style>
 
 
+<style id="neon-character-customizer-style">
+#neon-character-customizer{display:none;position:fixed;inset:0;z-index:9200;padding:clamp(8px,2vw,22px);box-sizing:border-box;align-items:center;justify-content:center;background:radial-gradient(ellipse at 20% 10%,rgba(0,223,255,.12),transparent 36%),radial-gradient(ellipse at 86% 90%,rgba(255,61,207,.11),transparent 38%),rgba(1,5,13,.9);backdrop-filter:blur(12px);color:#eaf8ff;font-family:Inter,Segoe UI,Arial,sans-serif;pointer-events:auto}
+#neon-character-customizer *{box-sizing:border-box}
+#neon-cc-card{width:min(1040px,100%);max-height:calc(var(--cc-vh,100vh) - 16px);overflow:hidden;border:1px solid rgba(113,229,255,.38);border-radius:20px;background:linear-gradient(145deg,rgba(10,23,38,.99),rgba(5,11,23,.99) 62%,rgba(24,10,35,.98));box-shadow:0 25px 95px rgba(0,0,0,.68),0 0 40px rgba(0,210,255,.08);display:flex;flex-direction:column}
+#neon-cc-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 20px;border-bottom:1px solid rgba(143,194,223,.14);flex:none}
+#neon-cc-kicker{color:#68f5de;font:900 9px/1.4 ui-monospace,Consolas,monospace;letter-spacing:2.2px}
+#neon-cc-header h2{font-size:clamp(23px,3vw,32px);line-height:1.05;margin:6px 0;color:#f3fcff;letter-spacing:-.5px}
+#neon-cc-header p{margin:0;color:#8faabe;font-size:11px;line-height:1.45}
+#neon-cc-close{flex:none;border:1px solid #3b596c;background:#132532;color:#e9f8ff;border-radius:10px;width:42px;height:42px;font-size:24px;cursor:pointer}
+#neon-cc-content{display:grid;grid-template-columns:minmax(230px,.78fr) minmax(0,1.5fr);min-height:0;overflow:auto}
+#neon-cc-preview-column{padding:18px;border-right:1px solid rgba(143,194,223,.12);background:linear-gradient(180deg,rgba(20,38,56,.25),rgba(5,12,25,.15));}
+#neon-cc-preview{--suit:#172b3b;--accent:#42f5da;--visor:#42f5da;--pants:#17212b;--skin:#b9c6cc;--trail:#42f5da;position:relative;min-height:325px;height:clamp(300px,42vh,420px);overflow:hidden;border:1px solid rgba(112,214,245,.18);border-radius:16px;background:radial-gradient(ellipse at 50% 24%,rgba(72,177,231,.16),transparent 43%),linear-gradient(160deg,rgba(12,30,48,.9),rgba(5,10,22,.96));display:flex;align-items:center;justify-content:center;isolation:isolate}
+#neon-cc-preview:before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(108,219,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(108,219,255,.035) 1px,transparent 1px);background-size:22px 22px;mask-image:linear-gradient(transparent,#000 30%,#000 80%,transparent)}
+.cc-preview-floor{position:absolute;bottom:25px;width:190px;height:34px;border-radius:50%;background:radial-gradient(ellipse, color-mix(in srgb,var(--trail) 45%,transparent),transparent 70%);filter:blur(8px);opacity:.9}
+.cc-preview-person{position:relative;width:150px;height:270px;z-index:1;filter:drop-shadow(0 8px 16px rgba(0,0,0,.36));transform:scale(var(--preview-scale,1));transform-origin:center bottom;transition:transform .2s}
+.cc-preview-helmet{position:absolute;left:43px;top:8px;width:64px;height:70px;border-radius:22px 22px 17px 17px;background:linear-gradient(120deg,var(--suit),color-mix(in srgb,var(--skin) 24%,#09131d) 65%);border:2px solid color-mix(in srgb,var(--accent) 65%,#253b4b);box-shadow:inset 0 -9px rgba(0,0,0,.2),0 0 14px color-mix(in srgb,var(--accent) 16%,transparent)}
+.cc-preview-helmet:before{content:"";position:absolute;left:-8px;right:-8px;top:17px;height:24px;border-radius:7px 7px 12px 12px;background:linear-gradient(90deg,#07121d,var(--visor),#f2ffff 48%,var(--visor),#07121d);border:2px solid rgba(2,8,15,.85);box-shadow:0 0 14px color-mix(in srgb,var(--visor) 65%,transparent)}
+.cc-preview-helmet:after{content:"";position:absolute;left:21px;top:47px;width:22px;height:6px;border-radius:4px;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.cc-preview-body{position:absolute;left:29px;top:77px;width:92px;height:99px;background:linear-gradient(90deg,color-mix(in srgb,var(--suit) 75%,#020711),var(--suit) 48%,color-mix(in srgb,var(--suit) 65%,#020711));border:2px solid color-mix(in srgb,var(--accent) 45%,#1b2d40);border-radius:22px 22px 13px 13px;clip-path:polygon(17% 0,83% 0,100% 26%,86% 100%,14% 100%,0 26%)}
+.cc-preview-body:before{content:"";position:absolute;left:20px;top:8px;width:49px;height:67px;background:linear-gradient(180deg,var(--accent),color-mix(in srgb,var(--accent) 25%,#09131d));clip-path:polygon(20% 0,80% 0,100% 100%,0 100%);opacity:.72}
+.cc-preview-body:after{content:"";position:absolute;left:42px;top:4px;width:7px;height:66px;background:var(--visor);box-shadow:0 0 9px var(--visor)}
+.cc-preview-arm{position:absolute;top:88px;width:25px;height:88px;border-radius:12px;background:linear-gradient(90deg,#09131d,var(--suit));border:2px solid color-mix(in srgb,var(--accent) 40%,#243b4d)}
+.cc-preview-arm.left{left:12px;transform:rotate(9deg)}.cc-preview-arm.right{right:12px;transform:rotate(-9deg)}
+.cc-preview-leg{position:absolute;top:164px;width:35px;height:81px;border-radius:8px 8px 10px 10px;background:linear-gradient(90deg,#07111c,var(--pants));border:2px solid color-mix(in srgb,var(--accent) 24%,#1c2a3a)}
+.cc-preview-leg.left{left:38px;transform:rotate(2deg)}.cc-preview-leg.right{right:38px;transform:rotate(-2deg)}
+.cc-preview-boot{position:absolute;top:235px;width:45px;height:22px;background:linear-gradient(180deg,var(--pants),#02050a);border-bottom:4px solid var(--accent);border-radius:7px 7px 3px 3px}
+.cc-preview-boot.left{left:28px}.cc-preview-boot.right{right:28px}
+#neon-cc-preview[data-helmet="horned"] .cc-preview-helmet:before{left:-17px;right:-17px;top:-13px;height:28px;border-radius:5px 5px 18px 18px;transform:rotate(-7deg);background:linear-gradient(90deg,var(--accent),#09131d 35%,var(--accent) 65%,#09131d)}
+#neon-cc-preview[data-helmet="winged"] .cc-preview-helmet:after{left:-22px;top:21px;width:104px;height:10px;border-radius:10px;background:linear-gradient(90deg,transparent,var(--accent),transparent)}
+#neon-cc-preview[data-helmet="open"] .cc-preview-helmet:before{height:11px;top:31px;border-radius:3px;background:linear-gradient(90deg,var(--visor),#07121d,var(--visor))}
+#neon-cc-preview[data-armor="heavy"] .cc-preview-body{border-radius:9px 9px 12px 12px;clip-path:polygon(7% 0,93% 0,100% 24%,91% 100%,9% 100%,0 24%)}
+#neon-cc-preview[data-armor="racer"] .cc-preview-body:before{opacity:1}
+#neon-cc-preview[data-armor="stealth"] .cc-preview-helmet{border-radius:13px;background:linear-gradient(120deg,#05080d,var(--suit) 65%)}
+#neon-cc-name-preview{position:absolute;left:8px;right:8px;bottom:10px;text-align:center;color:#eafaff;font:900 10px/1.3 ui-monospace,Consolas,monospace;letter-spacing:1.3px;text-shadow:0 0 12px var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#neon-cc-preview-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+#neon-cc-preview-badges span{border:1px solid color-mix(in srgb,var(--accent) 35%,#23394a);border-radius:7px;padding:5px 7px;color:#bce8f6;background:rgba(3,13,24,.55);font:800 8px ui-monospace,Consolas,monospace;letter-spacing:.8px}
+#neon-cc-controls{padding:16px 18px 18px;display:flex;flex-direction:column;gap:15px;min-width:0}
+.cc-section{border:1px solid rgba(132,188,218,.14);border-radius:12px;padding:12px;background:rgba(11,24,39,.46);min-width:0}
+.cc-section-title{font:900 9px/1.3 ui-monospace,Consolas,monospace;letter-spacing:1.8px;color:#6debd9;margin-bottom:10px}
+.cc-presets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.cc-preset{min-width:0;border:1px solid rgba(144,184,210,.22);border-radius:9px;padding:8px 5px;background:#0c1b2a;color:#dbeefa;cursor:pointer;font:800 9px/1.2 ui-monospace,Consolas,monospace}
+.cc-preset i{display:block;width:100%;height:12px;border-radius:6px;margin-bottom:6px;background:linear-gradient(90deg,var(--p1),var(--p2),var(--p3));box-shadow:0 0 9px color-mix(in srgb,var(--p2) 25%,transparent)}
+.cc-preset:hover,.cc-preset.active{border-color:#76f6e0;box-shadow:0 0 0 1px rgba(118,246,224,.15)}
+.cc-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.cc-field{min-width:0}.cc-field label{display:block;margin:0 0 6px;color:#91b0c5;font:800 8px/1.3 ui-monospace,Consolas,monospace;letter-spacing:1px}
+.cc-field input[type="text"],.cc-field select{width:100%;min-width:0;border:1px solid #2a4659;border-radius:8px;background:#06111d;color:#eaf7ff;padding:9px 10px;font:600 11px/1.2 system-ui,Arial,sans-serif;outline:none}
+.cc-field input[type="color"]{width:100%;height:37px;padding:3px;background:#06111d;border:1px solid #2a4659;border-radius:8px;cursor:pointer}
+.cc-field input[type="range"]{width:100%;accent-color:#64e9e1}
+.cc-range-line{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#a7c2d3;font:800 9px ui-monospace,Consolas,monospace}.cc-range-line output{color:#7ef4e5}
+.cc-checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.cc-check{display:flex;align-items:center;gap:7px;color:#c0d5e2;font-size:10px;line-height:1.3;cursor:pointer}.cc-check input{accent-color:#65f2de}
+#neon-cc-actions{display:flex;gap:8px;align-items:center;padding:12px 16px;border-top:1px solid rgba(143,194,223,.14);flex:none;background:rgba(3,9,19,.55)}
+#neon-cc-actions button{border:1px solid #31556b;border-radius:9px;padding:11px 12px;background:#102332;color:#dceef7;font:900 9px ui-monospace,Consolas,monospace;letter-spacing:.9px;cursor:pointer}
+#neon-cc-save{margin-left:auto!important;border-color:#69efd9!important;background:linear-gradient(100deg,#00cbb0,#54d8f5)!important;color:#03131b!important;min-width:138px}
+#neon-cc-status{margin-left:4px;color:#83f5d8;font:800 9px ui-monospace,Consolas,monospace;min-width:0}
+@media(max-width:720px){#neon-cc-card{max-height:calc(var(--cc-vh,100vh) - 10px);border-radius:14px}#neon-cc-header{padding:12px 14px}#neon-cc-content{grid-template-columns:1fr}#neon-cc-preview-column{padding:10px;border-right:0;border-bottom:1px solid rgba(143,194,223,.12)}#neon-cc-preview{height:230px;min-height:230px}#neon-cc-preview-person{transform:scale(.78)}#neon-cc-controls{padding:10px;gap:9px}#neon-cc-actions{padding:9px;flex-wrap:wrap}#neon-cc-save{min-width:120px}#neon-cc-status{width:100%;order:5;margin:2px 0 0}}
+@media(max-width:410px){.cc-fields{gap:7px}.cc-field label{font-size:7px;letter-spacing:.6px}.cc-section{padding:9px}.cc-preset{font-size:8px;padding:7px 3px}#neon-cc-preview{height:210px;min-height:210px}}
+</style>
+
 <style id="neon-multiplayer-styles">
 #neon-mp-overlay{display:none;position:fixed;inset:0;z-index:8500;align-items:center;justify-content:center;padding:14px;box-sizing:border-box;background:rgba(1,5,13,.88);backdrop-filter:blur(12px);font-family:Inter,Segoe UI,Arial,sans-serif;color:#e9f8ff;pointer-events:auto}
 #neon-mp-overlay *{box-sizing:border-box}
@@ -569,6 +628,7 @@
         <button class="menu-btn" onclick="initGame('classic')">CLASSIC NEON MODE</button>
         <button class="menu-btn pure" onclick="initGame('pure')">PURE PARKOUR (NO GRAPPLE)</button>
         <button class="menu-btn" onclick="openNeonMultiplayer()" style="border-color:#67f5d4;color:#9dffe9;box-shadow:0 0 18px rgba(65,255,218,.12);">MULTIPLAYER // WEBRTC P2P</button>
+        <button class="menu-btn" onclick="openCharacterCustomizer()" style="border-color:#ff6bd6;color:#ffc5ee;box-shadow:0 0 18px rgba(255,107,214,.14);">CHARACTER CUSTOMIZER</button>
         <button class="menu-btn" onclick="startInteractiveTraining()" style="border-color:#00ffcc;color:#9fffee;background:linear-gradient(100deg,rgba(0,205,178,.13),rgba(80,207,255,.09));box-shadow:inset 0 0 18px rgba(0,255,220,.04);">START IN-GAME TRAINING</button>
         <button class="menu-btn" onclick="openTutorial(false)" style="border-color:#00ffcc;margin-top:2px;">HOW TO PLAY / TUTORIAL</button>
         <button class="menu-btn" onclick="openGraphicsPanel()" style="border-color:#80d8ff; margin-top:2px;">WEB GRAPHICS SETTINGS</button>
@@ -7536,6 +7596,7 @@
       <button id="neon-mp-close" type="button" aria-label="Close multiplayer" onclick="closeNeonMultiplayer()">×</button>
     </div>
     <div class="neon-mp-name-row"><label for="neon-mp-name">PLAYER NAME</label><input id="neon-mp-name" maxlength="18" value="Runner" autocomplete="nickname" placeholder="Choose a name"></div>
+    <button type="button" class="neon-mp-action" style="margin:0 0 13px;max-width:260px;border-color:#f071c8;color:#ffc4ed;" onclick="openCharacterCustomizer()">Customize character</button>
     <div class="neon-mp-status" id="neon-mp-status" data-state="idle"><span id="neon-mp-status-dot"></span><span id="neon-mp-status-text">Create a room, or enter your friend's 6-character code.</span></div>
     <div class="neon-mp-grid">
       <section class="neon-mp-step">
@@ -7562,6 +7623,78 @@
       <button id="neon-mp-start" class="neon-mp-action" type="button" onclick="neonMPStartGame()" disabled>Enter multiplayer city · waiting for friend</button>
     </div>
     <p id="neon-mp-help">A lightweight public signaling service is used only to help both browsers find each other; gameplay data travels peer-to-peer when the network allows it. Internet access is required. If a connection fails, create a fresh room and try again.</p>
+  </div>
+</div>
+<div id="neon-character-customizer" role="dialog" aria-modal="true" aria-labelledby="neon-cc-title">
+  <div id="neon-cc-card">
+    <div id="neon-cc-header">
+      <div><div id="neon-cc-kicker">NEON RUNNER // CHARACTER LAB</div><h2 id="neon-cc-title">Build your runner</h2><p>Customize your look. Saved colors and gear sync to your friend in multiplayer.</p></div>
+      <button id="neon-cc-close" type="button" aria-label="Close character customizer" onclick="closeCharacterCustomizer()">×</button>
+    </div>
+    <div id="neon-cc-content">
+      <div id="neon-cc-preview-column">
+        <div id="neon-cc-preview" data-helmet="visor" data-armor="runner">
+          <div class="cc-preview-floor"></div>
+          <div class="cc-preview-person" id="neon-cc-preview-person">
+            <div class="cc-preview-helmet"></div><div class="cc-preview-body"></div>
+            <div class="cc-preview-arm left"></div><div class="cc-preview-arm right"></div>
+            <div class="cc-preview-leg left"></div><div class="cc-preview-leg right"></div>
+            <div class="cc-preview-boot left"></div><div class="cc-preview-boot right"></div>
+          </div>
+          <div id="neon-cc-name-preview">RUNNER</div>
+        </div>
+        <div id="neon-cc-preview-badges"><span>CYBER RUNNER</span><span>LIVE PREVIEW</span></div>
+      </div>
+      <div id="neon-cc-controls">
+        <section class="cc-section"><div class="cc-section-title">01 / QUICK OUTFITS</div>
+          <div class="cc-presets">
+            <button class="cc-preset" type="button" data-cc-preset="cyber" style="--p1:#18283b;--p2:#41f3dc;--p3:#b4ffff"><i></i>CYBER</button>
+            <button class="cc-preset" type="button" data-cc-preset="arctic" style="--p1:#d6f3ff;--p2:#5cdcff;--p3:#213c6b"><i></i>ARCTIC</button>
+            <button class="cc-preset" type="button" data-cc-preset="ember" style="--p1:#311722;--p2:#ff623f;--p3:#ffc45b"><i></i>EMBER</button>
+            <button class="cc-preset" type="button" data-cc-preset="toxic" style="--p1:#13291b;--p2:#8dff50;--p3:#d9ff6e"><i></i>TOXIC</button>
+            <button class="cc-preset" type="button" data-cc-preset="royal" style="--p1:#20133b;--p2:#bf85ff;--p3:#f3c4ff"><i></i>ROYAL</button>
+            <button class="cc-preset" type="button" data-cc-preset="sunset" style="--p1:#40213c;--p2:#ff6bb1;--p3:#ffb765"><i></i>SUNSET</button>
+          </div>
+        </section>
+        <section class="cc-section"><div class="cc-section-title">02 / IDENTITY</div>
+          <div class="cc-fields">
+            <div class="cc-field"><label for="neon-cc-name">PLAYER NAME</label><input id="neon-cc-name" type="text" maxlength="18" placeholder="Runner"></div>
+            <div class="cc-field"><label for="neon-cc-titleline">CALLSIGN / TITLE</label><input id="neon-cc-titleline" type="text" maxlength="18" placeholder="ROOFTOP RUNNER"></div>
+          </div>
+        </section>
+        <section class="cc-section"><div class="cc-section-title">03 / COLOR STUDIO</div>
+          <div class="cc-fields">
+            <div class="cc-field"><label for="neon-cc-suit">SUIT COLOR</label><input id="neon-cc-suit" type="color" value="#172b3b"></div>
+            <div class="cc-field"><label for="neon-cc-accent">ARMOR / ACCENT</label><input id="neon-cc-accent" type="color" value="#42f5da"></div>
+            <div class="cc-field"><label for="neon-cc-visor">VISOR / EYE GLOW</label><input id="neon-cc-visor" type="color" value="#42f5da"></div>
+            <div class="cc-field"><label for="neon-cc-pants">PANTS / BOOTS</label><input id="neon-cc-pants" type="color" value="#17212b"></div>
+            <div class="cc-field"><label for="neon-cc-skin">FACE TONE</label><input id="neon-cc-skin" type="color" value="#b9c6cc"></div>
+            <div class="cc-field"><label for="neon-cc-trail-color">TRAIL COLOR</label><input id="neon-cc-trail-color" type="color" value="#42f5da"></div>
+          </div>
+        </section>
+        <section class="cc-section"><div class="cc-section-title">04 / SHAPE & GEAR</div>
+          <div class="cc-fields">
+            <div class="cc-field"><label for="neon-cc-armor">ARMOR BUILD</label><select id="neon-cc-armor"><option value="runner">Runner / balanced</option><option value="heavy">Heavy / tank</option><option value="racer">Racer / stripes</option><option value="stealth">Stealth / dark plates</option></select></div>
+            <div class="cc-field"><label for="neon-cc-helmet">HELMET / FACE</label><select id="neon-cc-helmet"><option value="visor">Neon visor</option><option value="horned">Horned helmet</option><option value="winged">Winged helmet</option><option value="open">Open faceplate</option></select></div>
+            <div class="cc-field"><label for="neon-cc-eyes">EYE SHAPE</label><select id="neon-cc-eyes"><option value="slit">Sharp slits</option><option value="wide">Wide glow</option><option value="focused">Focused dots</option></select></div>
+            <div class="cc-field"><label for="neon-cc-nameplate">NAMEPLATE</label><select id="neon-cc-nameplate"><option value="neon">Neon frame</option><option value="stealth">Stealth dark</option><option value="minimal">Minimal</option></select></div>
+            <div class="cc-field"><label for="neon-cc-animation">ANIMATION STYLE</label><select id="neon-cc-animation"><option value="balanced">Balanced</option><option value="agile">Agile / quick</option><option value="heavy">Heavy / powerful</option><option value="floaty">Floaty / smooth</option></select></div>
+            <div class="cc-field"><label for="neon-cc-trail">MOVEMENT TRAIL</label><select id="neon-cc-trail"><option value="off">No trail</option><option value="ring">Neon foot ring</option><option value="orbit">Orbiting sparks</option><option value="aura">Energy aura</option></select></div>
+          </div>
+          <div style="height:10px"></div>
+          <div class="cc-field"><div class="cc-range-line"><label for="neon-cc-build">BODY SIZE</label><output id="neon-cc-build-out">100%</output></div><input id="neon-cc-build" type="range" min="88" max="114" step="1" value="100"></div>
+          <div style="height:8px"></div>
+          <div class="cc-field"><div class="cc-range-line"><label for="neon-cc-glow">GLOW INTENSITY</label><output id="neon-cc-glow-out">1.4×</output></div><input id="neon-cc-glow" type="range" min="0.4" max="3" step="0.1" value="1.4"></div>
+          <div style="height:10px"></div>
+          <div class="cc-checks">
+            <label class="cc-check"><input id="neon-cc-backpack" type="checkbox" checked> Backpack & pack light</label>
+            <label class="cc-check"><input id="neon-cc-shoulders" type="checkbox" checked> Shoulder armor</label>
+            <label class="cc-check"><input id="neon-cc-emblem" type="checkbox" checked> Chest emblem</label>
+          </div>
+        </section>
+      </div>
+    </div>
+    <div id="neon-cc-actions"><button type="button" id="neon-cc-randomize">RANDOMIZE</button><button type="button" id="neon-cc-reset">RESET</button><span id="neon-cc-status" aria-live="polite">Unsaved changes</span><button id="neon-cc-save" type="button">SAVE & APPLY</button></div>
   </div>
 </div>
 <div id="neon-mp-hud">P2P · WAITING FOR PEER</div>
@@ -7593,6 +7726,40 @@
   window.__neonMPThirdPerson = false;
   let statusMessageBeforeGame = '';
   let localColor = 0x42f5da;
+  const APPEARANCE_KEY = 'neonRunnerCharacterV2';
+  const APPEARANCE_DEFAULTS = {
+    name:'Runner', title:'ROOFTOP RUNNER', suitColor:'#172b3b', accentColor:'#42f5da', visorColor:'#42f5da',
+    pantsColor:'#17212b', skinColor:'#b9c6cc', trailColor:'#42f5da', armorStyle:'runner', helmetStyle:'visor',
+    eyeStyle:'slit', nameplateStyle:'neon', animationStyle:'balanced', trailStyle:'off', build:100, glow:1.4,
+    backpack:true, shoulders:true, chestEmblem:true
+  };
+  const allowedAppearance = {
+    armorStyle:['runner','heavy','racer','stealth'], helmetStyle:['visor','horned','winged','open'],
+    eyeStyle:['slit','wide','focused'], nameplateStyle:['neon','stealth','minimal'],
+    animationStyle:['balanced','agile','heavy','floaty'], trailStyle:['off','ring','orbit','aura']
+  };
+  function normalizeHex(value, fallback) { return /^#[0-9a-f]{6}$/i.test(String(value||'')) ? String(value).toLowerCase() : fallback; }
+  function hexToInt(value) { return parseInt(String(value||'#42f5da').replace('#',''),16) >>> 0; }
+  function normalizeAppearance(raw, fallbackAccent=0x42f5da) {
+    const a = raw && typeof raw === 'object' ? raw : {};
+    const defaults = {...APPEARANCE_DEFAULTS, accentColor:'#'+(Number(fallbackAccent)>>>0).toString(16).padStart(6,'0'), visorColor:'#'+(Number(fallbackAccent)>>>0).toString(16).padStart(6,'0'), trailColor:'#'+(Number(fallbackAccent)>>>0).toString(16).padStart(6,'0')};
+    const out = {...defaults};
+    if (typeof a.name === 'string') out.name = a.name.replace(/[<>\u0000-\u001f]/g,'').trim().slice(0,18) || defaults.name;
+    if (typeof a.title === 'string') out.title = a.title.replace(/[<>\u0000-\u001f]/g,'').trim().slice(0,18);
+    for (const key of ['suitColor','accentColor','visorColor','pantsColor','skinColor','trailColor']) out[key] = normalizeHex(a[key], defaults[key]);
+    for (const key of Object.keys(allowedAppearance)) out[key] = allowedAppearance[key].includes(a[key]) ? a[key] : defaults[key];
+    out.build = Math.round(clamp(Number(a.build)||100,88,114));
+    out.glow = Math.round(clamp(Number(a.glow)||1.4,.4,3)*10)/10;
+    for (const key of ['backpack','shoulders','chestEmblem']) out[key] = typeof a[key] === 'boolean' ? a[key] : defaults[key];
+    return out;
+  }
+  function readStoredAppearance() {
+    try { return normalizeAppearance(JSON.parse(localStorage.getItem(APPEARANCE_KEY)||'{}')); } catch (_) { return normalizeAppearance({}); }
+  }
+  let localAppearance = readStoredAppearance();
+  localColor = hexToInt(localAppearance.accentColor);
+  const initialNameInput = document.getElementById('neon-mp-name');
+  if (initialNameInput && (!initialNameInput.value || initialNameInput.value === 'Runner') && localAppearance.name) initialNameInput.value = localAppearance.name;
   let wrappedChunkBuilder = false;
   let playerGrappleActive = false;
   window.__neonMPPlayerGrappleActive = false;
@@ -7803,25 +7970,19 @@
         if (data && data.type === 'state' && Number.isFinite(data.x) && Number.isFinite(data.y) && Number.isFinite(data.z)) {
           lastState = data;
           avatarTime = performance.now();
-          if (!remoteAvatar) {
-            remoteAvatar = createAvatar(data.name || 'Runner', Number(data.color) || 0x42f5da);
-            remoteAvatar.root.position.set(data.x, data.y - clamp(data.height || 1.8, .8, 2) / 2, data.z);
-            scene.add(remoteAvatar.root);
-          }
           const incomingName = String(data.name || 'Runner').replace(/[<>\u0000-\u001f]/g, '').trim().slice(0, 18) || 'Runner';
-          if (remoteAvatar.name !== incomingName && typeof remoteAvatar.setName === 'function') {
-            remoteAvatar.name = remoteAvatar.setName(incomingName);
-          } else { remoteAvatar.name = incomingName; }
-          if (remoteAvatar.state.color !== Number(data.color)) {
-            const preservedName = remoteAvatar.name;
-            const oldPosition = remoteAvatar.root.position.clone();
-            const oldYaw = remoteAvatar.root.rotation.y;
-            scene.remove(remoteAvatar.root);
-            disposeAvatar(remoteAvatar);
-            remoteAvatar = createAvatar(preservedName, Number(data.color) || 0x42f5da);
+          const incomingAppearance = normalizeAppearance({...((data.appearance && typeof data.appearance === 'object') ? data.appearance : {}), name:incomingName}, Number(data.color) || 0x42f5da);
+          const incomingSignature = JSON.stringify(incomingAppearance);
+          if (!remoteAvatar || remoteAvatar.appearanceSignature !== incomingSignature) {
+            const oldPosition = remoteAvatar ? remoteAvatar.root.position.clone() : new THREE.Vector3(data.x, data.y - clamp(data.height || 1.8, .8, 2) / 2, data.z);
+            const oldYaw = remoteAvatar ? remoteAvatar.root.rotation.y : (Number(data.yaw) || 0);
+            if (remoteAvatar) { scene.remove(remoteAvatar.root); disposeAvatar(remoteAvatar); }
+            remoteAvatar = createAvatar(incomingName, Number(data.color) || hexToInt(incomingAppearance.accentColor), incomingAppearance);
             remoteAvatar.root.position.copy(oldPosition);
             remoteAvatar.root.rotation.y = oldYaw;
             scene.add(remoteAvatar.root);
+          } else if (remoteAvatar.name !== incomingName && typeof remoteAvatar.setName === 'function') {
+            remoteAvatar.name = remoteAvatar.setName(incomingName);
           }
           remoteAvatar.target.set(data.x, data.y - clamp(data.height || 1.8, .8, 2) / 2, data.z);
           remoteAvatar.state = data;
@@ -7844,19 +8005,25 @@
     group.add(mesh);
     return mesh;
   }
-  function createAvatar(name, accentHex) {
+  function createAvatar(name, accentHex, appearanceInput) {
+    const appearance = normalizeAppearance(appearanceInput || localAppearance, accentHex || localColor);
+    accentHex = hexToInt(appearance.accentColor);
+    const visorHex = hexToInt(appearance.visorColor);
+    const suitHex = hexToInt(appearance.suitColor);
+    const pantsHex = hexToInt(appearance.pantsColor);
+    const skinHex = hexToInt(appearance.skinColor);
     const root = new THREE.Group(); root.name = 'NeonRunner_RemotePlayer_' + name;
     const state = { color: accentHex, grounded: true, slide: false, wallRun: false, wallClimb: false, grapple: false, zipline: false, strafe: 0, sprint: false };
-    const jacket = makeMat(0x172b3b, .42, .25, 0x071622, .25);
+    const jacket = makeMat(suitHex, .42, .25, suitHex, .10);
     const dark = makeMat(0x09131d, .72, .16, 0x01050a, .1);
-    const pants = makeMat(0x17212b, .62, .12, 0x02070a, .08);
-    const skin = makeMat(0xb9c6cc, .68, .02, 0x111c24, .18);
-    const accent = makeMat(accentHex, .28, .32, accentHex, .85);
-    const accentSoft = makeMat(accentHex, .36, .45, accentHex, .34);
-    const glass = new THREE.MeshPhysicalMaterial({ color: 0x08151e, metalness: .72, roughness: .13, clearcoat: 1, emissive: accentHex, emissiveIntensity: .42 });
+    const pants = makeMat(pantsHex, .62, .12, 0x02070a, .08);
+    const skin = makeMat(skinHex, .68, .02, skinHex, .08);
+    const accent = makeMat(accentHex, .28, .32, accentHex, .85 * appearance.glow);
+    const accentSoft = makeMat(accentHex, .36, .45, accentHex, .34 * appearance.glow);
+    const glass = new THREE.MeshPhysicalMaterial({ color: 0x08151e, metalness: .72, roughness: .13, clearcoat: 1, emissive: visorHex, emissiveIntensity: .42 * appearance.glow });
     const sole = makeMat(0x02060b, .85, .05);
 
-    // Stylized, articulated rooftop runner: layered jacket, visor, harness, gloves and boots.
+    // Stylized, articulated rooftop runner with selectable gear groups.
     const upperRig = new THREE.Group(); root.add(upperRig);
     addPart(upperRig, new THREE.BoxGeometry(.62, .78, .34), jacket, [0, 1.24, 0], 'Jacket torso');
     addPart(upperRig, new THREE.BoxGeometry(.45, .19, .365), dark, [0, .98, -.005], 'Belt');
@@ -7864,25 +8031,47 @@
     addPart(upperRig, new THREE.BoxGeometry(.26, .05, .04), glass, [0, 1.43, -.208], 'Chest visor stripe');
     addPart(upperRig, new THREE.BoxGeometry(.075, .39, .04), accent, [-.19, 1.25, -.201], 'Left harness strip');
     addPart(upperRig, new THREE.BoxGeometry(.075, .39, .04), accent, [.19, 1.25, -.201], 'Right harness strip');
-    addPart(upperRig, new THREE.BoxGeometry(.34, .45, .20), dark, [0, 1.31, .24], 'Compact runner pack');
-    addPart(upperRig, new THREE.BoxGeometry(.26, .1, .22), accentSoft, [0, 1.51, .23], 'Pack light');
-    addPart(upperRig, new THREE.SphereGeometry(.31, 16, 12), jacket, [0, 1.79, 0], 'Hood');
-    addPart(upperRig, new THREE.SphereGeometry(.235, 20, 16), skin, [0, 1.91, -.015], 'Head');
-    addPart(upperRig, new THREE.BoxGeometry(.345, .095, .055), glass, [0, 1.95, -.222], 'Cyan face visor');
-    addPart(upperRig, new THREE.BoxGeometry(.28, .035, .04), accent, [0, 2.015, -.21], 'Visor top edge');
-    addPart(upperRig, new THREE.BoxGeometry(.16, .06, .04), dark, [0, 1.82, -.22], 'Lower mask');
+    const backpackGroup = new THREE.Group(); backpackGroup.name = 'Customization_Backpack'; upperRig.add(backpackGroup);
+    addPart(backpackGroup, new THREE.BoxGeometry(.34, .45, .20), dark, [0, 1.31, .24], 'Compact runner pack');
+    addPart(backpackGroup, new THREE.BoxGeometry(.26, .1, .22), accentSoft, [0, 1.51, .23], 'Pack light');
+    const hoodMesh = addPart(upperRig, new THREE.SphereGeometry(.31, 16, 12), jacket, [0, 1.79, 0], 'Hood');
+    const headMesh = addPart(upperRig, new THREE.SphereGeometry(.235, 20, 16), skin, [0, 1.91, -.015], 'Head');
+    const visorPlate = addPart(upperRig, new THREE.BoxGeometry(.345, .095, .055), glass, [0, 1.95, -.222], 'Cyan face visor');
+    const visorTop = addPart(upperRig, new THREE.BoxGeometry(.28, .035, .04), accent, [0, 2.015, -.21], 'Visor top edge');
+    const lowerMask = addPart(upperRig, new THREE.BoxGeometry(.16, .06, .04), dark, [0, 1.82, -.22], 'Lower mask');
+    const helmetExtras = new THREE.Group(); helmetExtras.name = 'Customization_HelmetExtras'; upperRig.add(helmetExtras);
+    const hornGroup = new THREE.Group(); hornGroup.name = 'HornedHelmet'; helmetExtras.add(hornGroup);
+    addPart(hornGroup, new THREE.ConeGeometry(.075,.24,7), accent, [-.19,2.14,-.015], 'Left helmet horn');
+    addPart(hornGroup, new THREE.ConeGeometry(.075,.24,7), accent, [.19,2.14,-.015], 'Right helmet horn');
+    const wingGroup = new THREE.Group(); wingGroup.name = 'WingedHelmet'; helmetExtras.add(wingGroup);
+    const leftWing = addPart(wingGroup, new THREE.BoxGeometry(.10,.19,.34), accentSoft, [-.27,1.96,.005], 'Left helmet wing'); leftWing.rotation.z = -.30;
+    const rightWing = addPart(wingGroup, new THREE.BoxGeometry(.10,.19,.34), accentSoft, [.27,1.96,.005], 'Right helmet wing'); rightWing.rotation.z = .30;
+    const armorExtras = new THREE.Group(); armorExtras.name = 'Customization_ArmorStyle'; upperRig.add(armorExtras);
+    const heavyArmor = new THREE.Group(); heavyArmor.name = 'HeavyArmor'; armorExtras.add(heavyArmor);
+    addPart(heavyArmor, new THREE.BoxGeometry(.55,.56,.105), accentSoft, [0,1.30,-.205], 'Heavy chest plate');
+    addPart(heavyArmor, new THREE.BoxGeometry(.18,.25,.10), dark, [-.30,1.36,-.015], 'Heavy left side plate');
+    addPart(heavyArmor, new THREE.BoxGeometry(.18,.25,.10), dark, [.30,1.36,-.015], 'Heavy right side plate');
+    const racerArmor = new THREE.Group(); racerArmor.name = 'RacerArmor'; armorExtras.add(racerArmor);
+    addPart(racerArmor, new THREE.BoxGeometry(.07,.47,.035), accent, [-.12,1.27,-.206], 'Racer stripe left');
+    addPart(racerArmor, new THREE.BoxGeometry(.07,.47,.035), accent, [.12,1.27,-.206], 'Racer stripe right');
+    const stealthArmor = new THREE.Group(); stealthArmor.name = 'StealthArmor'; armorExtras.add(stealthArmor);
+    addPart(stealthArmor, new THREE.BoxGeometry(.49,.14,.12), dark, [0,1.57,.12], 'Stealth collar');
+    addPart(stealthArmor, new THREE.BoxGeometry(.48,.21,.06), dark, [0,1.12,-.19], 'Stealth waist plate');
+    const chestEmblemGroup = new THREE.Group(); chestEmblemGroup.name = 'Customization_ChestEmblem'; upperRig.add(chestEmblemGroup);
+    addPart(chestEmblemGroup, new THREE.OctahedronGeometry(.085,0), accent, [0,1.34,-.235], 'Chest power emblem');
+    addPart(chestEmblemGroup, new THREE.BoxGeometry(.025,.19,.018), glass, [0,1.34,-.225], 'Chest emblem line');
 
     // Expressive cyber-runner face: layered eye sockets, angled brows, lit eyes,
     // cheek LEDs and a small respirator grille. All details face the avatar's -Z front.
     const faceFrame = makeMat(0x030912, .28, .62, 0x020712, .25);
-    const faceTrim = makeMat(0x253b4b, .3, .58, accentHex, .38);
+    const faceTrim = makeMat(0x253b4b, .3, .58, accentHex, .38 * appearance.glow);
     const faceEyeGlow = new THREE.MeshStandardMaterial({
-      color: accentHex, emissive: accentHex, emissiveIntensity: 2.25,
+      color: visorHex, emissive: visorHex, emissiveIntensity: 2.25 * appearance.glow,
       roughness: .18, metalness: .14
     });
     const faceEyeCore = new THREE.MeshBasicMaterial({ color: 0xeaffff });
     const faceMouthGlow = new THREE.MeshStandardMaterial({
-      color: accentHex, emissive: accentHex, emissiveIntensity: 1.45,
+      color: visorHex, emissive: visorHex, emissiveIntensity: 1.45 * appearance.glow,
       roughness: .3, metalness: .25
     });
     const faceEyes = [];
@@ -7922,8 +8111,9 @@
     }
     addPart(upperRig, new THREE.OctahedronGeometry(.035, 0), accent, [0, 2.065, -.222], 'Forehead power gem');
 
-    const leftShoulder = addPart(upperRig, new THREE.SphereGeometry(.19, 12, 10), accentSoft, [-.39, 1.48, 0], 'Left shoulder pad');
-    const rightShoulder = addPart(upperRig, new THREE.SphereGeometry(.19, 12, 10), accentSoft, [.39, 1.48, 0], 'Right shoulder pad');
+    const shoulderGroup = new THREE.Group(); shoulderGroup.name = 'Customization_ShoulderArmor'; upperRig.add(shoulderGroup);
+    const leftShoulder = addPart(shoulderGroup, new THREE.SphereGeometry(.19, 12, 10), accentSoft, [-.39, 1.48, 0], 'Left shoulder pad');
+    const rightShoulder = addPart(shoulderGroup, new THREE.SphereGeometry(.19, 12, 10), accentSoft, [.39, 1.48, 0], 'Right shoulder pad');
 
     function makeArm(side) {
       const pivot = new THREE.Group(); pivot.position.set(side * .40, 1.43, 0); upperRig.add(pivot);
@@ -7954,26 +8144,35 @@
     const leftLeg = leftLegParts.pivot, rightLeg = rightLegParts.pivot;
     const leftKnee = leftLegParts.knee, rightKnee = rightLegParts.knee;
 
+    // Cosmetic foot trail stays attached to the character and is cheap to render.
+    const trailGroup = new THREE.Group(); trailGroup.name = 'Customization_MovementTrail'; root.add(trailGroup); trailGroup.position.y = .07;
+    const trailMat = new THREE.MeshStandardMaterial({ color:hexToInt(appearance.trailColor), emissive:hexToInt(appearance.trailColor), emissiveIntensity:.75*appearance.glow, transparent:true, opacity:.66, roughness:.25, metalness:.2, side:THREE.DoubleSide });
+    const trailRing = new THREE.Mesh(new THREE.TorusGeometry(.47,.018,6,28), trailMat); trailRing.rotation.x=Math.PI/2; trailRing.position.y=.01; trailRing.name='Trail ring'; trailGroup.add(trailRing);
+    const orbitDots=[];
+    for(let i=0;i<3;i++){const dot=new THREE.Mesh(new THREE.SphereGeometry(.045,8,6),trailMat);dot.position.set(Math.cos(i*Math.PI*2/3)*.43,.12,Math.sin(i*Math.PI*2/3)*.43);trailGroup.add(dot);orbitDots.push(dot);}
+    const aura = new THREE.Mesh(new THREE.TorusGeometry(.62,.055,7,32), new THREE.MeshBasicMaterial({color:hexToInt(appearance.trailColor),transparent:true,opacity:.18,side:THREE.DoubleSide})); aura.rotation.x=Math.PI/2; aura.position.y=.05; aura.name='Trail aura'; trailGroup.add(aura);
+
     // High-contrast billboard nameplate above each player. The texture can be refreshed
     // when a player changes their name, and the tag stays readable while the avatar moves.
     const canvas = document.createElement('canvas'); canvas.width = 640; canvas.height = 144;
     const ctx = canvas.getContext('2d');
     let texture = null;
     let safeName = 'Runner';
-    const accentCss = '#' + (accentHex >>> 0).toString(16).padStart(6, '0');
+    const accentCss = appearance.nameplateStyle === 'stealth' ? '#8398a8' : '#' + (accentHex >>> 0).toString(16).padStart(6, '0');
     function drawNameplate(value) {
       safeName = String(value || 'Runner').replace(/[<>\u0000-\u001f]/g, '').trim().slice(0, 18) || 'Runner';
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = 'rgba(2,8,17,.88)';
+      ctx.fillStyle = appearance.nameplateStyle === 'minimal' ? 'rgba(2,8,17,.48)' : appearance.nameplateStyle === 'stealth' ? 'rgba(5,10,16,.95)' : 'rgba(2,8,17,.88)';
       ctx.beginPath();
       if (ctx.roundRect) ctx.roundRect(8, 9, 624, 126, 25); else ctx.rect(8, 9, 624, 126);
       ctx.fill();
-      ctx.strokeStyle = accentCss; ctx.lineWidth = 5; ctx.stroke();
+      ctx.strokeStyle = accentCss; ctx.lineWidth = appearance.nameplateStyle === 'minimal' ? 2 : 5; if (appearance.nameplateStyle !== 'minimal') ctx.stroke();
       ctx.fillStyle = accentCss;
-      ctx.beginPath(); ctx.arc(43, 72, 8, 0, Math.PI * 2); ctx.fill();
-      ctx.font = '900 43px Segoe UI, Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#f2fdff';
-      ctx.shadowColor = accentCss; ctx.shadowBlur = 9;
-      ctx.fillText(safeName, 338, 72, 540);
+      if (appearance.nameplateStyle !== 'minimal') { ctx.beginPath(); ctx.arc(43, 72, 8, 0, Math.PI * 2); ctx.fill(); }
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#f2fdff';
+      ctx.shadowColor = accentCss; ctx.shadowBlur = appearance.nameplateStyle === 'stealth' ? 2 : 9;
+      if (appearance.title) { ctx.font = '800 18px Segoe UI, Arial'; ctx.fillStyle = accentCss; ctx.fillText(String(appearance.title).slice(0,18), 338, 43, 520); ctx.font = '900 36px Segoe UI, Arial'; ctx.fillStyle = '#f2fdff'; ctx.fillText(safeName, 338, 86, 540); }
+      else { ctx.font = '900 43px Segoe UI, Arial'; ctx.fillText(safeName, 338, 72, 540); }
       ctx.shadowBlur = 0;
       if (texture) texture.needsUpdate = true;
       return safeName;
@@ -7982,18 +8181,35 @@
     texture = new THREE.CanvasTexture(canvas); texture.encoding = THREE.sRGBEncoding;
     const labelMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: true, depthWrite: false });
     const label = new THREE.Sprite(labelMaterial);
-    label.position.set(0, 2.9, 0); label.scale.set(2.7, .61, 1); label.renderOrder = 900;
+    label.position.set(0, 2.9, 0); label.scale.set(2.7, appearance.title ? .72 : .61, 1); label.renderOrder = 900;
     root.add(label);
     const setName = value => drawNameplate(value);
-
+    backpackGroup.visible = appearance.backpack;
+    shoulderGroup.visible = appearance.shoulders;
+    chestEmblemGroup.visible = appearance.chestEmblem;
+    hoodMesh.visible = appearance.helmetStyle !== 'open';
+    visorPlate.visible = appearance.helmetStyle !== 'open';
+    visorTop.visible = appearance.helmetStyle !== 'open';
+    lowerMask.visible = appearance.helmetStyle !== 'open';
+    helmetExtras.visible = appearance.helmetStyle === 'horned' || appearance.helmetStyle === 'winged';
+    hornGroup.visible = appearance.helmetStyle === 'horned';
+    wingGroup.visible = appearance.helmetStyle === 'winged';
+    heavyArmor.visible = appearance.armorStyle === 'heavy';
+    racerArmor.visible = appearance.armorStyle === 'racer';
+    stealthArmor.visible = appearance.armorStyle === 'stealth';
+    trailGroup.visible = appearance.trailStyle !== 'off';
+    for (const eye of faceEyes) { if (appearance.eyeStyle === 'wide') eye.scale.y = 1.65; else if (appearance.eyeStyle === 'focused') eye.scale.y = .62; else eye.scale.y = 1; }
+    root.scale.setScalar(appearance.build / 100);
     return {
       root, upperRig, leftArm, rightArm, leftElbow, rightElbow,
       leftLeg, rightLeg, leftKnee, rightKnee, label, texture, setName,
       target: new THREE.Vector3(), state, phase: 0, name: safeName,
-      faceEyeGlow, faceEyes,
+      faceEyeGlow, faceEyes, faceEyeBaseScale: appearance.eyeStyle === 'wide' ? 1.65 : appearance.eyeStyle === 'focused' ? .62 : 1,
+      appearance, appearanceSignature:JSON.stringify(appearance), backpackGroup, shoulderGroup, chestEmblemGroup,
+      trailGroup, trailRing, trailAura:aura, trailDots:orbitDots,
       // Per-avatar animation state makes landings and transitions blend smoothly.
       wasGrounded: null, landImpact: 0, idlePhase: Math.random() * Math.PI * 2,
-      materials: [jacket,dark,pants,skin,accent,accentSoft,glass,sole,faceFrame,faceTrim,faceEyeGlow,faceEyeCore,faceMouthGlow], geometries: []
+      materials: [jacket,dark,pants,skin,accent,accentSoft,glass,sole,faceFrame,faceTrim,faceEyeGlow,faceEyeCore,faceMouthGlow,trailMat,aura.material], geometries: []
     };
   }
   function disposeAvatar(avatar) {
@@ -8021,10 +8237,12 @@
     };
 
     // Use actual movement speed for cadence so slow movement doesn't look like sprinting.
-    const cadence = moving ? THREE.MathUtils.clamp(speed * (sprinting ? .39 : .32), 4.3, sprinting ? 14.5 : 10.5) : 1.7;
+    const animStyle = avatar.appearance?.animationStyle || 'balanced';
+    const cadenceFactor = animStyle === 'agile' ? 1.22 : animStyle === 'heavy' ? .82 : animStyle === 'floaty' ? .86 : 1;
+    const cadence = moving ? THREE.MathUtils.clamp(speed * (sprinting ? .39 : .32) * cadenceFactor, 4.3, sprinting ? 14.5 : 10.5) : 1.7;
     avatar.phase += dt * cadence;
     avatar.idlePhase += dt * 1.8;
-    const stride = moving && grounded && !sliding ? Math.min(1, speed / (sprinting ? 34 : 25)) : 0;
+    const stride = moving && grounded && !sliding ? Math.min(1, speed / (sprinting ? 34 : 25)) * (animStyle === 'heavy' ? .82 : animStyle === 'agile' ? 1.12 : 1) : 0;
     const swing = Math.sin(avatar.phase) * stride * (sprinting ? .92 : .72);
     const oppositeSwing = Math.sin(avatar.phase + Math.PI) * stride * (sprinting ? .92 : .72);
     const footLiftL = Math.max(0, Math.sin(avatar.phase + Math.PI)) * stride;
@@ -8054,8 +8272,8 @@
 
     if (airborne) {
       // Tuck the legs and bring arms up while airborne; the pose relaxes on landing.
-      legLX = .30; legRX = -.34;
-      kneeLX = .78; kneeRX = .68;
+      legLX = animStyle === 'floaty' ? .12 : .30; legRX = animStyle === 'floaty' ? -.14 : -.34;
+      kneeLX = animStyle === 'floaty' ? .52 : .78; kneeRX = animStyle === 'floaty' ? .48 : .68;
       armLX = -1.22; armRX = -1.02;
       elbowLX = .34; elbowRX = .40;
       torsoX = -.12; torsoY = .025;
@@ -8111,18 +8329,27 @@
 
     // Tiny heel lift and landing compression add weight without disturbing the root collision position.
     const runningBob = moving && grounded && !sliding ? Math.abs(Math.sin(avatar.phase * 2)) * .045 * stride : 0;
-    const targetScaleY = (sliding ? .91 : 1) - impact * .40;
-    const targetScaleXZ = (sliding ? 1.04 : 1) + impact * .20;
+    const buildScale = clamp(Number(avatar.appearance?.build) || 100, 88, 114) / 100;
+    const targetScaleY = ((sliding ? .91 : 1) - impact * .40) * buildScale;
+    const targetScaleXZ = ((sliding ? 1.04 : 1) + impact * .20) * (1 + (buildScale - 1) * .35);
     damp(avatar.root.scale, 'y', targetScaleY, dt, 15);
     damp(avatar.root.scale, 'x', targetScaleXZ, dt, 15);
     damp(avatar.root.scale, 'z', targetScaleXZ, dt, 15);
     damp(avatar.upperRig.position, 'y', torsoY + runningBob - impact * .08, dt, 13);
 
     // Keep the face alive; subtle chest/visor pulsing is cheaper than extra scene lights.
-    if (avatar.faceEyeGlow) avatar.faceEyeGlow.emissiveIntensity = 1.95 + (Math.sin(now * .0032 + avatar.phase * .15) + 1) * .34;
+    if (avatar.faceEyeGlow) avatar.faceEyeGlow.emissiveIntensity = (1.1 + (Math.sin(now * .0032 + avatar.phase * .15) + 1) * .34) * (Number(avatar.appearance?.glow) || 1.4);
     if (avatar.faceEyes) {
       const blink = Math.pow(Math.max(0, Math.sin(now * .0017 + avatar.idlePhase)), 22);
-      for (const eye of avatar.faceEyes) eye.scale.y = 1 - blink * .78;
+      for (const eye of avatar.faceEyes) eye.scale.y = (avatar.faceEyeBaseScale || 1) * (1 - blink * .45);
+    }
+    if (avatar.trailGroup) {
+      const trailStyle = avatar.appearance?.trailStyle || 'off';
+      avatar.trailGroup.visible = trailStyle !== 'off' && moving;
+      avatar.trailGroup.rotation.y += dt * (trailStyle === 'orbit' ? 2.3 : 1.1);
+      if (avatar.trailRing) avatar.trailRing.visible = trailStyle === 'ring' || trailStyle === 'orbit';
+      if (avatar.trailAura) { avatar.trailAura.visible = trailStyle === 'aura'; avatar.trailAura.material.opacity = .14 + (Math.sin(now * .006 + avatar.phase) + 1) * .08; }
+      if (avatar.trailDots) avatar.trailDots.forEach((dot,i)=>{ dot.visible = trailStyle === 'orbit'; dot.position.set(Math.cos(now*.0025+i*Math.PI*2/3)*.46,.10+Math.sin(now*.004+i)*.06,Math.sin(now*.0025+i*Math.PI*2/3)*.46); });
     }
     if (avatar.label) avatar.label.material.rotation = 0;
   }
@@ -8149,7 +8376,7 @@
     const pos = player.position, vel = player.velocity;
     const data = {
       type: 'state', t: Date.now(),
-      name: playerName(), color: localColor,
+      name: playerName(), color: localColor, appearance: {...localAppearance, name:playerName()},
       x: +pos.x.toFixed(3), y: +pos.y.toFixed(3), z: +pos.z.toFixed(3),
       yaw: +player.yaw.toFixed(4), pitch: +player.pitch.toFixed(4),
       height: +player.height.toFixed(3),
@@ -8378,7 +8605,7 @@
   };
   window.neonMPCreateOffer = async function() {
     try {
-      closePeer(true); isHost = true; roomSeed = randomSeed(); localColor = [0x42f5da,0xff6bd6,0x77aaff,0xffbf69][roomSeed % 4];
+      closePeer(true); isHost = true; roomSeed = randomSeed(); localColor = hexToInt(localAppearance.accentColor);
       setStatus('Creating direct WebRTC offer and gathering connection candidates…', 'idle');
       const peer = createPeerConnection();
       const dc = peer.createDataChannel('neon-runner-state', { ordered: false, maxRetransmits: 0 });
@@ -8394,7 +8621,7 @@
     try {
       const incoming = decodeSignal(document.getElementById('neon-mp-offer-input').value);
       if (incoming.description.type !== 'offer') throw new Error('This is not a host offer. Ask the host for their offer code.');
-      closePeer(true); isHost = false; roomSeed = incoming.seed || 1; localColor = [0x42f5da,0xff6bd6,0x77aaff,0xffbf69][(roomSeed + 1) % 4];
+      closePeer(true); isHost = false; roomSeed = incoming.seed || 1; localColor = hexToInt(localAppearance.accentColor);
       setStatus('Reading host offer and creating your response…', 'idle');
       const peer = createPeerConnection();
       peer.ondatachannel = event => attachChannel(event.channel);
@@ -8432,7 +8659,7 @@
       player.pitch = 0;
       player.velocity.set(0, 0, 0);
       if (localAvatar) { scene.remove(localAvatar.root); disposeAvatar(localAvatar); }
-      localAvatar = createAvatar(playerName(), localColor);
+      localAvatar = createAvatar(playerName(), localColor, localAppearance);
       localAvatar.root.position.set(player.position.x, player.position.y - player.height / 2, player.position.z);
       localAvatar.root.visible = !!window.__neonMPThirdPerson;
       scene.add(localAvatar.root);
@@ -8444,6 +8671,23 @@
       grappleHint.dataset.active = 'false';
       setStatus('P2P multiplayer active. Rain and night sync for both players. Press 9 for storm, N for night, G to grapple.', 'good');
     } catch (e) { setStatus('Unable to start multiplayer game: ' + (e.message || e), 'bad'); }
+  };
+
+  // Expose profile APIs to the character-lab UI while keeping the profile peer-synchronized.
+  window.__neonGetAppearance = () => ({...localAppearance});
+  window.__neonApplyAppearance = (next) => {
+    localAppearance = normalizeAppearance(next || {}, localColor);
+    localColor = hexToInt(localAppearance.accentColor);
+    const nameField = document.getElementById('neon-mp-name');
+    if (nameField) nameField.value = localAppearance.name || playerName();
+    try { localStorage.setItem(APPEARANCE_KEY, JSON.stringify(localAppearance)); } catch (_) {}
+    if (localAvatar) {
+      const pos = localAvatar.root.position.clone(), yaw = localAvatar.root.rotation.y, visible = localAvatar.root.visible;
+      scene.remove(localAvatar.root); disposeAvatar(localAvatar);
+      localAvatar = createAvatar(playerName(), localColor, localAppearance);
+      localAvatar.root.position.copy(pos); localAvatar.root.rotation.y = yaw; localAvatar.root.visible = visible; scene.add(localAvatar.root);
+    }
+    return {...localAppearance};
   };
 
   // Optional third-person camera makes the articulated player model visible locally.
@@ -8667,7 +8911,7 @@
       const code = makeRoomCode();
       activeRoomCode = code;
       roomSeed = seedFromRoomCode(code);
-      localColor = palette[roomSeed % palette.length];
+      localColor = hexToInt(localAppearance.accentColor);
       const client = new window.Peer(peerIdForRoom(code), peerOptions());
       peerjsPeer = client;
       document.getElementById('neon-mp-room-output').value = '';
@@ -8724,7 +8968,7 @@
     activeRoomCode = code;
     reconnectAttempt = 0;
     roomSeed = seedFromRoomCode(code);
-    localColor = [0x42f5da, 0xff6bd6, 0x77aaff, 0xffbf69][(roomSeed + 1) % 4];
+    localColor = hexToInt(localAppearance.accentColor);
     document.getElementById('neon-mp-create-answer').disabled = true;
     setStatus('Looking for room ' + code + '…', 'idle');
     const client = new window.Peer(undefined, peerOptions());
@@ -8809,6 +9053,98 @@
 </div>
 
 
+<script id="neon-character-customizer-script">
+(() => {
+  'use strict';
+  const modal = document.getElementById('neon-character-customizer');
+  const preview = document.getElementById('neon-cc-preview');
+  const namePreview = document.getElementById('neon-cc-name-preview');
+  const status = document.getElementById('neon-cc-status');
+  if (!modal || !preview) return;
+  const ids = {
+    name:'neon-cc-name', title:'neon-cc-titleline', suitColor:'neon-cc-suit', accentColor:'neon-cc-accent',
+    visorColor:'neon-cc-visor', pantsColor:'neon-cc-pants', skinColor:'neon-cc-skin', trailColor:'neon-cc-trail-color',
+    armorStyle:'neon-cc-armor', helmetStyle:'neon-cc-helmet', eyeStyle:'neon-cc-eyes', nameplateStyle:'neon-cc-nameplate',
+    animationStyle:'neon-cc-animation', trailStyle:'neon-cc-trail', build:'neon-cc-build', glow:'neon-cc-glow',
+    backpack:'neon-cc-backpack', shoulders:'neon-cc-shoulders', chestEmblem:'neon-cc-emblem'
+  };
+  const defaults = {name:'Runner',title:'ROOFTOP RUNNER',suitColor:'#172b3b',accentColor:'#42f5da',visorColor:'#42f5da',pantsColor:'#17212b',skinColor:'#b9c6cc',trailColor:'#42f5da',armorStyle:'runner',helmetStyle:'visor',eyeStyle:'slit',nameplateStyle:'neon',animationStyle:'balanced',trailStyle:'off',build:100,glow:1.4,backpack:true,shoulders:true,chestEmblem:true};
+  const presets = {
+    cyber:{suitColor:'#172b3b',accentColor:'#42f5da',visorColor:'#8dffff',pantsColor:'#17212b',skinColor:'#b9c6cc',trailColor:'#42f5da',armorStyle:'runner',helmetStyle:'visor',eyeStyle:'slit',trailStyle:'ring'},
+    arctic:{suitColor:'#c2d9e8',accentColor:'#5cdcff',visorColor:'#a9f5ff',pantsColor:'#273f5d',skinColor:'#dce8ee',trailColor:'#5cdcff',armorStyle:'racer',helmetStyle:'winged',eyeStyle:'wide',trailStyle:'orbit'},
+    ember:{suitColor:'#38202a',accentColor:'#ff623f',visorColor:'#ffc45b',pantsColor:'#24141d',skinColor:'#e1a58b',trailColor:'#ff623f',armorStyle:'heavy',helmetStyle:'horned',eyeStyle:'focused',trailStyle:'aura'},
+    toxic:{suitColor:'#15291e',accentColor:'#8dff50',visorColor:'#d9ff6e',pantsColor:'#101a15',skinColor:'#b8c9b6',trailColor:'#8dff50',armorStyle:'stealth',helmetStyle:'open',eyeStyle:'wide',trailStyle:'orbit'},
+    royal:{suitColor:'#26183e',accentColor:'#bf85ff',visorColor:'#f3c4ff',pantsColor:'#18112b',skinColor:'#b8a7d4',trailColor:'#bf85ff',armorStyle:'heavy',helmetStyle:'horned',eyeStyle:'slit',trailStyle:'ring'},
+    sunset:{suitColor:'#422440',accentColor:'#ff6bb1',visorColor:'#ffb765',pantsColor:'#302033',skinColor:'#e3b0a2',trailColor:'#ff6bb1',armorStyle:'racer',helmetStyle:'winged',eyeStyle:'focused',trailStyle:'aura'}
+  };
+  let current = {...defaults};
+  let saved = {...defaults};
+  function readControls(){
+    const out={};
+    for(const [key,id] of Object.entries(ids)){
+      const el=document.getElementById(id); if(!el)continue;
+      out[key] = el.type==='checkbox' ? el.checked : el.type==='range' ? Number(el.value) : el.value;
+    }
+    return out;
+  }
+  function fillControls(p){
+    const value={...defaults,...p};
+    for(const [key,id] of Object.entries(ids)){
+      const el=document.getElementById(id); if(!el)continue;
+      if(el.type==='checkbox')el.checked=!!value[key]; else el.value= value[key] == null ? defaults[key] : value[key];
+    }
+    refreshPreview();
+  }
+  function refreshPreview(){
+    current=readControls();
+    preview.style.setProperty('--suit',current.suitColor); preview.style.setProperty('--accent',current.accentColor);
+    preview.style.setProperty('--visor',current.visorColor); preview.style.setProperty('--pants',current.pantsColor);
+    preview.style.setProperty('--skin',current.skinColor); preview.style.setProperty('--trail',current.trailColor);
+    preview.dataset.helmet=current.helmetStyle; preview.dataset.armor=current.armorStyle;
+    document.getElementById('neon-cc-preview-person').style.setProperty('--preview-scale',String(current.build/100));
+    namePreview.textContent=(current.name||'Runner').toUpperCase().slice(0,18);
+    document.getElementById('neon-cc-build-out').textContent=current.build+'%';
+    document.getElementById('neon-cc-glow-out').textContent=Number(current.glow).toFixed(1)+'×';
+    document.getElementById('neon-cc-preview-badges').innerHTML='';
+    const badges=[current.armorStyle.toUpperCase(),current.helmetStyle.toUpperCase(),current.trailStyle==='off'?'NO TRAIL':current.trailStyle.toUpperCase()];
+    for(const label of badges){const span=document.createElement('span');span.textContent=label;document.getElementById('neon-cc-preview-badges').appendChild(span);}
+    document.querySelectorAll('.cc-preset').forEach(b=>{
+      const p=presets[b.dataset.ccPreset]; b.classList.toggle('active',!!p&&p.suitColor===current.suitColor&&p.accentColor===current.accentColor&&p.visorColor===current.visorColor);
+    });
+    if(status)status.textContent='Unsaved changes';
+  }
+  function mergePreset(key){const preset=presets[key];if(!preset)return;fillControls({...readControls(),...preset});}
+  window.openCharacterCustomizer=function(){
+    const base=(typeof window.__neonGetAppearance==='function'?window.__neonGetAppearance():defaults)||defaults;
+    const nameInput=document.getElementById('neon-mp-name');
+    fillControls({...defaults,...base,name:nameInput?.value||base.name||'Runner'});
+    const vv=window.visualViewport; modal.style.setProperty('--cc-vh',(vv?.height||window.innerHeight)+'px');
+    modal.style.display='flex';
+    try{document.getElementById('neon-cc-name').focus({preventScroll:true});}catch(_){}
+  };
+  window.closeCharacterCustomizer=function(){modal.style.display='none';};
+  modal.addEventListener('click',e=>{if(e.target===modal)window.closeCharacterCustomizer();});
+  Object.values(ids).forEach(id=>{const el=document.getElementById(id); if(!el)return;el.addEventListener('input',refreshPreview);el.addEventListener('change',refreshPreview);el.addEventListener('keydown',e=>e.stopPropagation());});
+  document.querySelectorAll('.cc-preset').forEach(b=>b.addEventListener('click',()=>mergePreset(b.dataset.ccPreset)));
+  document.getElementById('neon-cc-randomize').addEventListener('click',()=>{
+    const colors=['#42f5da','#ff6bd6','#77aaff','#ffbf69','#8dff50','#bf85ff','#ff623f','#a9f5ff','#ff5577','#f2f5ff'];
+    const pick=()=>colors[Math.floor(Math.random()*colors.length)];
+    const base=readControls(); fillControls({...base,suitColor:pick(),accentColor:pick(),visorColor:pick(),pantsColor:pick(),trailColor:pick(),armorStyle:['runner','heavy','racer','stealth'][Math.floor(Math.random()*4)],helmetStyle:['visor','horned','winged','open'][Math.floor(Math.random()*4)],eyeStyle:['slit','wide','focused'][Math.floor(Math.random()*3)],trailStyle:['off','ring','orbit','aura'][Math.floor(Math.random()*4)]});
+  });
+  document.getElementById('neon-cc-reset').addEventListener('click',()=>fillControls({...defaults,name:document.getElementById('neon-mp-name')?.value||'Runner'}));
+  document.getElementById('neon-cc-save').addEventListener('click',()=>{
+    const p=readControls(); p.name=String(p.name||'Runner').replace(/[<>\u0000-\u001f]/g,'').trim().slice(0,18)||'Runner'; p.title=String(p.title||'').replace(/[<>\u0000-\u001f]/g,'').trim().slice(0,18);
+    if(typeof window.__neonApplyAppearance==='function') window.__neonApplyAppearance(p);
+    const nameInput=document.getElementById('neon-mp-name'); if(nameInput)nameInput.value=p.name;
+    saved={...p}; current={...p};
+    if(status)status.textContent='SAVED · SYNCING';
+    window.closeCharacterCustomizer();
+  });
+  modal.addEventListener('keydown',e=>{ if(e.key==='Escape'){e.preventDefault();window.closeCharacterCustomizer();} e.stopPropagation(); });
+  window.addEventListener('resize',()=>{const vv=window.visualViewport;modal.style.setProperty('--cc-vh',(vv?.height||window.innerHeight)+'px');},{passive:true});
+})();
+</script>
+
 <script id="neon-mobile-controls-script">
 (() => {
   'use strict';
@@ -8820,6 +9156,7 @@
   const tutorialOverlay = document.getElementById('tutorial-overlay');
   const mainMenu = document.getElementById('main-menu');
   const adminPanel = document.getElementById('admin-panel');
+  const characterCustomizer = document.getElementById('neon-character-customizer');
   if (!root || !joystick || !stick || !lookPad) return;
 
   const heldKeys = new Set();
@@ -8895,7 +9232,7 @@
     player.pitch=Math.max(-Math.PI/2+0.1,Math.min(Math.PI/2-0.1,player.pitch));
   }
   function activeNow() {
-    return isTouchDevice() && gameRunning() && !isShown(mainMenu) && !isShown(multiplayerOverlay) && !isShown(tutorialOverlay) && !isShown(adminPanel);
+    return isTouchDevice() && gameRunning() && !isShown(mainMenu) && !isShown(multiplayerOverlay) && !isShown(tutorialOverlay) && !isShown(adminPanel) && !isShown(characterCustomizer);
   }
   function syncVisibility() {
     const active=activeNow();
@@ -9018,7 +9355,7 @@
   window.addEventListener('blur',releaseEverything);
   document.addEventListener('visibilitychange',()=>{if(document.hidden)releaseEverything();});
   const observer=new MutationObserver(syncVisibility);
-  [mainMenu,multiplayerOverlay,tutorialOverlay,adminPanel].filter(Boolean).forEach(el=>observer.observe(el,{attributes:true,attributeFilter:['style','class','hidden']}));
+  [mainMenu,multiplayerOverlay,tutorialOverlay,adminPanel,characterCustomizer].filter(Boolean).forEach(el=>observer.observe(el,{attributes:true,attributeFilter:['style','class','hidden']}));
   window.addEventListener('resize',syncVisibility,{passive:true});
   document.addEventListener('pointerdown',syncVisibility,true);
   document.addEventListener('touchstart',syncVisibility,{capture:true,passive:true});

@@ -470,6 +470,12 @@
 #neon-mp-name{min-width:0;flex:1;border:1px solid #345064;background:#07131e;color:white;border-radius:9px;padding:10px 12px;font:600 14px/1.2 'Segoe UI',Arial,sans-serif;outline:none}
 @media(max-height:850px){#main-menu{justify-content:flex-start;padding:22px 0;box-sizing:border-box;overflow-y:auto}#main-menu h1{font-size:clamp(38px,6vh,58px);margin-bottom:14px;flex-shrink:0}#main-menu .menu-btn{margin:6px;padding:11px 20px;font-size:16px;flex-shrink:0}}
 .neon-mp-status{display:flex;align-items:center;gap:10px;padding:11px 13px;border:1px solid rgba(129,174,199,.2);border-radius:10px;background:rgba(255,255,255,.025);color:#b1c9d7;font-size:12px;line-height:1.5;margin-bottom:13px}
+.neon-mp-network-tools{margin:0 0 14px;padding:12px;border:1px solid rgba(102,193,225,.2);border-radius:11px;background:rgba(5,17,29,.58)}
+.neon-mp-network-tools button{border:1px solid #5798b7;background:linear-gradient(100deg,rgba(37,113,153,.26),rgba(60,187,200,.13));color:#dff8ff;border-radius:8px;padding:9px 11px;font:850 10px/1.3 ui-monospace,Consolas,monospace;letter-spacing:.6px;cursor:pointer}
+.neon-mp-network-tools button:disabled{opacity:.5;cursor:wait}
+#neon-mp-network-result{font-size:11px;line-height:1.55;color:#a6c1d2;margin:9px 0 0;white-space:pre-line}
+#neon-mp-network-result[data-state="good"]{color:#76f2cf}#neon-mp-network-result[data-state="bad"]{color:#ffb1bb}
+
 #neon-mp-status-dot{width:8px;height:8px;flex:none;border-radius:50%;background:#7d98ab;box-shadow:0 0 9px currentColor}
 #neon-mp-status[data-state="good"] #neon-mp-status-dot{background:#52ffd0;color:#52ffd0}
 #neon-mp-status[data-state="bad"] #neon-mp-status-dot{background:#ff6b8b;color:#ff6b8b}
@@ -7636,6 +7642,10 @@
     <div class="neon-mp-name-row"><label for="neon-mp-name">PLAYER NAME</label><input id="neon-mp-name" maxlength="18" value="Runner" autocomplete="nickname" placeholder="Choose a name"></div>
     <button type="button" class="neon-mp-action" style="margin:0 0 13px;max-width:260px;border-color:#f071c8;color:#ffc4ed;" onclick="openCharacterCustomizer()">Customize character</button>
     <div class="neon-mp-status" id="neon-mp-status" data-state="idle"><span id="neon-mp-status-dot"></span><span id="neon-mp-status-text">Create a room, or enter your friend's 6-character code.</span></div>
+    <div class="neon-mp-network-tools">
+      <button type="button" id="neon-mp-network-test" onclick="neonMPTestSchoolNetwork()">TEST SCHOOL / RESTRICTED NETWORK</button>
+      <p id="neon-mp-network-result" role="status" aria-live="polite">Checks whether the room-signaling service and a TLS TURN relay on port 443 are reachable from this network.</p>
+    </div>
     <div class="neon-mp-grid">
       <section class="neon-mp-step">
         <h3>01 · Host a game</h3>
@@ -7660,7 +7670,7 @@
     <div class="neon-mp-foot">
       <button id="neon-mp-start" class="neon-mp-action" type="button" onclick="neonMPStartGame()" disabled>Enter multiplayer city · waiting for friend</button>
     </div>
-    <p id="neon-mp-help">A lightweight public signaling service is used only to help both browsers find each other; gameplay data travels peer-to-peer when the network allows it. Internet access is required. If a connection fails, create a fresh room and try again.</p>
+    <p id="neon-mp-help">Uses public signaling plus STUN/TURN, including a TLS relay attempt over port 443 for restrictive networks. Some schools block the signaling host, TURN traffic, or external CDNs by policy; the test helps identify the failing step, but the game cannot override a network block.</p>
   </div>
 </div>
 <div id="neon-character-customizer" role="dialog" aria-modal="true" aria-labelledby="neon-cc-title">
@@ -7740,7 +7750,25 @@
 <div id="neon-mp-grapple-hint" role="status" aria-live="polite">G · GRAPPLE PLAYER &nbsp; / &nbsp; G · RELEASE</div>
 
 
-<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"></script>
+<script>
+window.__neonPeerLibraryLoading = false;
+window.__neonLoadPeerFallback = function(){
+  if (window.Peer || window.__neonPeerLibraryLoading) return;
+  window.__neonPeerLibraryLoading = true;
+  const sources = ['https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js'];
+  const tryNext = index => {
+    if (window.Peer) { window.__neonPeerLibraryLoading = false; return; }
+    if (index >= sources.length) { window.__neonPeerLibraryLoading = false; return; }
+    const script = document.createElement('script');
+    script.src = sources[index];
+    script.onload = () => { window.__neonPeerLibraryLoading = false; };
+    script.onerror = () => { script.remove(); tryNext(index + 1); };
+    document.head.appendChild(script);
+  };
+  tryNext(0);
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js" onerror="window.__neonLoadPeerFallback()"></script>
 
 <script id="neon-multiplayer-runtime">
 (() => {
@@ -7956,13 +7984,10 @@
   }
   function createPeerConnection() {
     if (!RTC) throw new Error('This browser does not support WebRTC. Try a current version of Chrome or Edge.');
-    const peer = new RTC({
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun.cloudflare.com:3478' }
-      ],
-      bundlePolicy: 'max-bundle'
-    });
+    // Use the same TURN/TLS-capable configuration as the room-code connection path.
+    // The TLS TURN entry is important on networks that allow HTTPS on TCP 443 but block UDP.
+    const relayConfig = peerOptions().config;
+    const peer = new RTC({ ...relayConfig, bundlePolicy: 'max-bundle' });
     pc = peer;
     peer.onconnectionstatechange = () => {
       if (peer.connectionState === 'connected') setStatus('Peer connection established. Opening player data channel…', 'good');
@@ -8793,6 +8818,111 @@
     if (connected && typeof GAME_STARTED !== 'undefined' && GAME_STARTED) hud.style.display = 'block';
   }
 
+  // Diagnostics for school / corporate networks: test signaling separately from a TURN-over-TLS relay.
+  window.neonMPTestSchoolNetwork = async function() {
+    const button = document.getElementById('neon-mp-network-test');
+    const result = document.getElementById('neon-mp-network-result');
+    if (!button || !result) return;
+    if (!RTC) {
+      result.dataset.state = 'bad';
+      result.textContent = 'WebRTC is unavailable in this browser. Try a current Chrome or Edge browser.';
+      return;
+    }
+    button.disabled = true;
+    result.dataset.state = 'idle';
+    result.textContent = '1/2 · Testing the signaling service…';
+
+    const testSignaling = () => new Promise(resolve => {
+      if (!window.Peer) {
+        if (window.__neonPeerLibraryLoading) {
+          result.textContent = 'Loading the fallback multiplayer library…';
+          const waitStart = Date.now();
+          const poll = setInterval(() => {
+            if (window.Peer) { clearInterval(poll); resolve({ok:true, note:'PeerJS loaded using the fallback CDN.'}); }
+            else if (Date.now() - waitStart > 6500) { clearInterval(poll); resolve({ok:false, note:'PeerJS library is blocked or could not load from the available CDNs.'}); }
+          }, 150);
+          return;
+        }
+        if (typeof window.__neonLoadPeerFallback === 'function') window.__neonLoadPeerFallback();
+        resolve({ok:false, note:'PeerJS library is unavailable. The school may block its CDN; try reloading on an allowed network.'});
+        return;
+      }
+      let testPeer;
+      let done = false;
+      const finish = value => {
+        if (done) return;
+        done = true;
+        clearTimeout(timeout);
+        try { if (testPeer && !testPeer.destroyed) testPeer.destroy(); } catch (_) {}
+        resolve(value);
+      };
+      const timeout = setTimeout(() => finish({ok:false, note:'Signaling timed out. The school may block wss://0.peerjs.com:443.'}), 8000);
+      try {
+        testPeer = new window.Peer(undefined, peerOptions());
+        testPeer.on('open', () => finish({ok:true, note:'Signaling server reachable over secure WebSocket.'}));
+        testPeer.on('error', err => finish({ok:false, note:'Signaling failed: ' + humanizePeerError(err)}));
+      } catch (err) { finish({ok:false, note:'Could not start signaling test: ' + (err.message || 'unknown error')}); }
+    });
+
+    const testTlsRelay = () => new Promise(resolve => {
+      let probe;
+      let done = false;
+      let timer;
+      const finish = value => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        try { if (probe) probe.close(); } catch (_) {}
+        resolve(value);
+      };
+      try {
+        probe = new RTC({
+          iceTransportPolicy: 'relay',
+          iceCandidatePoolSize: 0,
+          iceServers: [{
+            urls: 'turns:openrelay.metered.ca:443?transport=tcp',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+          }]
+        });
+        probe.createDataChannel('school-network-test');
+        probe.onicecandidate = event => {
+          if (event.candidate && event.candidate.type === 'relay') {
+            finish({ok:true, note:'TLS TURN relay candidate found on port 443.'});
+          } else if (!event.candidate) {
+            finish({ok:false, note:'No TLS relay candidate was gathered.'});
+          }
+        };
+        probe.onicecandidateerror = () => {};
+        timer = setTimeout(() => finish({ok:false, note:'TLS TURN relay test timed out.'}), 10000);
+        probe.createOffer().then(offer => probe.setLocalDescription(offer)).catch(err => {
+          finish({ok:false, note:'TURN test error: ' + (err.message || 'could not create a connection offer')});
+        });
+      } catch (err) { finish({ok:false, note:'TURN test unavailable: ' + (err.message || 'unknown error')}); }
+    });
+
+    try {
+      const signaling = await testSignaling();
+      result.textContent = '1/2 · ' + (signaling.ok ? 'PASS — ' : 'BLOCKED — ') + signaling.note + '\n2/2 · Testing TLS relay on TCP port 443…';
+      const relay = await testTlsRelay();
+      const lines = [
+        (signaling.ok ? 'PASS' : 'FAIL') + ' · Signaling: ' + signaling.note,
+        (relay.ok ? 'PASS' : 'FAIL') + ' · TURN/TLS: ' + relay.note
+      ];
+      if (signaling.ok && relay.ok) {
+        lines.push('This network passed both checks. Multiplayer can still fail if the school blocks the game host/CDNs or applies additional policies.');
+        result.dataset.state = 'good';
+      } else {
+        lines.push('If the school intentionally blocks these services, only the school administrator or a permitted alternative network can resolve it.');
+        result.dataset.state = 'bad';
+      }
+      result.textContent = lines.join('\n');
+    } catch (err) {
+      result.dataset.state = 'bad';
+      result.textContent = 'Network test stopped: ' + (err.message || 'unknown error');
+    } finally { button.disabled = false; }
+  };
+
   window.openNeonMultiplayer = function() {
     if (!RTC) { setStatus('WebRTC is not supported in this browser. Use a current Chrome or Edge.', 'bad'); }
     overlay.style.display = 'flex';
@@ -9021,22 +9151,25 @@
       pingInterval: 5000,
       config: {
         iceCandidatePoolSize: 8,
+        iceTransportPolicy: 'all',
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun.cloudflare.com:3478' },
           { urls: 'stun:openrelay.metered.ca:80' },
           { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+          { urls: 'turn:openrelay.metered.ca:80?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
           { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-          { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+          { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+          { urls: 'turns:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
         ]
       }
     };
   }
   function humanizePeerError(err) {
     const type = err && err.type;
-    if (type === 'peer-unavailable') return 'Room not found. Check the 6-character code and make sure the host still has the room open.';
+    if (type === 'peer-unavailable') return 'Room not found. Check the 6-character code, make sure the host keeps the room open, and that both networks permit the signaling service.';
     if (type === 'unavailable-id') return 'That room code is already in use. Click Create Room again to generate a new one.';
-    if (type === 'network' || type === 'socket-error' || type === 'server-error') return 'Could not reach the room service. Check your internet connection and try again.';
+    if (type === 'network' || type === 'socket-error' || type === 'server-error') return 'Could not reach the room service. A school firewall may block secure WebSocket signaling; run TEST SCHOOL / RESTRICTED NETWORK.';
     if (type === 'browser-incompatible') return 'This browser does not support WebRTC. Try the latest Chrome or Edge.';
     return (err && err.message) || 'The connection failed. Create a new room and try again.';
   }

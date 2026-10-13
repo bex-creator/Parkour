@@ -10213,6 +10213,7 @@
   let activeTab = 'home';
   let activeQuestId = 'photo-01';
   let mapFilter = 'all';
+  let mapHoverKey = '';
   let mapBoundsCache = null;
   let areaTargetsCache = null;
   let lastMapLiveUpdate = 0;
@@ -10316,7 +10317,10 @@
     const ring=new THREE.Mesh(new THREE.TorusGeometry(3.5,.12,8,32),ringMat); ring.rotation.x=Math.PI/2; ring.position.y=-5.0; root.add(ring);
     const ring2=new THREE.Mesh(new THREE.TorusGeometry(2.2,.06,6,24),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.65,side:THREE.DoubleSide,depthWrite:false})); ring2.rotation.x=Math.PI/2; ring2.position.y=-4.93; root.add(ring2);
     const beam=new THREE.Mesh(new THREE.CylinderGeometry(.035,.12,5.1,8,1,true),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.32,depthWrite:false})); beam.position.y=-2.35; root.add(beam);
-    const texture=markerLabelTexture(q,done); const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false,depthWrite:false})); sprite.scale.set(11,2.75,1); sprite.position.y=1.25; sprite.renderOrder=500; root.add(sprite);
+    const texture=markerLabelTexture(q,done); const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false,depthWrite:false})); sprite.scale.set(11,2.75,1); sprite.position.y=1.25; sprite.renderOrder=500;
+    // Show a floating photo tag only when this spot is the current waypoint.
+    sprite.visible=!!(store.waypoint && store.waypoint.type==='quest' && store.waypoint.id===q.id);
+    root.add(sprite);
     root.userData.photoQuest={id:q.id,ring,ring2,beam,sprite,baseY:q.y+5.4,phase:Math.random()*Math.PI*2}; scene.add(root);
     questMarkers.push({id:q.id,root,ring,ring2,beam,sprite});
   }
@@ -10483,6 +10487,8 @@
     m.ring.material.color.setHex(color); m.ring.material.opacity=done?.28:active?.9:.48;
     m.ring2.material.color.setHex(color); m.beam.material.color.setHex(color);
     m.sprite.material.map?.dispose?.(); m.sprite.material.map=markerLabelTexture(q,done); m.sprite.material.needsUpdate=true;
+    // Keep the name tag synchronized with the active waypoint.
+    m.sprite.visible=!!(store.waypoint && store.waypoint.type==='quest' && store.waypoint.id===q.id);
     m.root.userData.photoQuest.phase=Math.random()*Math.PI*2;
   }
   function selectQuest(id) {
@@ -10538,8 +10544,8 @@
   function getMapTargets(filter = 'all') {
     const targets=[];
     if (filter==='all'||filter==='areas') getAreaTargets().forEach(a=>targets.push({...a,type:'area'}));
-    if (filter==='all'||filter==='photos') quests.forEach(q=>targets.push({type:'quest',id:q.id,name:q.title,detail:store.completed.includes(q.id)?'Photo captured':'Photo quest · '+String(q.index).padStart(2,'0'),icon:q.icon,x:q.x,y:q.y,z:q.z,color:store.completed.includes(q.id)?'#55efb2':'#55dcff',done:store.completed.includes(q.id)}));
-    if (filter==='all'||filter==='people') npcMarkers.forEach(m=>{const seen=store.npcSeen.includes(m.id),done=store.npcCompleted.includes(m.id);targets.push({type:'npc',id:m.id,name:seen?m.npc.name:'Unknown Runner '+String(NPC_DEFS.findIndex(n=>n.id===m.id)+1).padStart(2,'0'),detail:done?'NPC quest complete':seen?m.npc.role:'Unmet city runner',icon:seen?m.npc.icon:'❔',x:m.x,y:m.y,z:m.z,color:'#'+Number(m.npc.color).toString(16).padStart(6,'0'),seen,done});});
+    if (filter==='all'||filter==='photos') quests.forEach(q=>targets.push({type:'quest',id:q.id,name:q.title,detail:(store.completed.includes(q.id)?'Captured · ':'Photo quest '+String(q.index).padStart(2,'0')+' · ')+(q.description||'Photograph this city location.'),icon:q.icon,x:q.x,y:q.y,z:q.z,color:store.completed.includes(q.id)?'#55efb2':'#55dcff',done:store.completed.includes(q.id)}));
+    if (filter==='all'||filter==='people') npcMarkers.forEach(m=>{const seen=store.npcSeen.includes(m.id),done=store.npcCompleted.includes(m.id);targets.push({type:'npc',id:m.id,name:seen?m.npc.name:'Unknown Runner '+String(NPC_DEFS.findIndex(n=>n.id===m.id)+1).padStart(2,'0'),detail:done?'NPC quest complete':seen?m.npc.role:'NPC · visit this marker to meet the runner',icon:seen?m.npc.icon:'❔',x:m.x,y:m.y,z:m.z,color:'#'+Number(m.npc.color).toString(16).padStart(6,'0'),seen,done});});
     return targets;
   }
   function getWaypointTarget() {
@@ -10653,17 +10659,19 @@
   }
 
   function clearWaypoint(silent=false) {
-    store.waypoint=null;saveStore();disposeWaypointBeacon();updateWaypointHud();
+    store.waypoint=null;mapHoverKey='';saveStore();disposeWaypointBeacon();
+    questMarkers.forEach(m=>{const q=quests.find(v=>v.id===m.id);if(q)refreshMarker(q);});
+    updateWaypointHud();
     if(phoneOpen&&activeTab==='map')renderPhone();
     if(!silent)toast('WAYPOINT CLEARED');
   }
   function setWaypoint(type,id) {
     const target=getMapTargets('all').find(t=>t.type===type&&t.id===id);
     if(!target){toast('LOCATION IS NOT AVAILABLE YET · START OR RESET THE CITY');return;}
-    store.waypoint={type,id};
-    if(type==='quest'&&!store.completed.includes(id)){
-      activeQuestId=id;questMarkers.forEach(m=>{const q=quests.find(v=>v.id===m.id);if(q)refreshMarker(q);});
-    }
+    store.waypoint={type,id};mapHoverKey=type+':'+id;
+    if(type==='quest'&&!store.completed.includes(id)) activeQuestId=id;
+    // Refresh every photo marker so only the selected photo waypoint has a floating tag.
+    questMarkers.forEach(m=>{const q=quests.find(v=>v.id===m.id);if(q)refreshMarker(q);});
     saveStore();updateWaypointHud();
     if(phoneOpen&&activeTab==='map')renderPhone();
     if(type==='quest')renderHud(true);
@@ -10684,8 +10692,25 @@
     $('nr-waypoint-distance').textContent=dist<18?'YOU ARE HERE · '+Math.round(dist)+' UNITS':Math.round(dist)+' UNITS AWAY · '+directionLabel(dx,dz);
     const worldBearing = Math.atan2(dx, -dz);
     const facing = (typeof player.yaw === 'number' && Number.isFinite(player.yaw)) ? player.yaw : 0;
-    const relativeBearing = worldBearing - facing;
+    // The game camera faces local -Z, so positive player.yaw turns the view
+    // toward negative X. Convert the world bearing into camera-relative screen
+    // rotation using the inverse of the camera yaw convention.
+    const relativeBearing = worldBearing + facing;
     $('nr-waypoint-arrow').style.transform='rotate('+((relativeBearing*180/Math.PI)||0)+'deg)';
+  }
+  function checkWaypointArrival() {
+    const target = getWaypointTarget();
+    if (!target || !GAME_STARTED || typeof player === 'undefined' || !player.position || !store.waypoint) return;
+    const dx = (Number(target.x) || 0) - player.position.x;
+    const dz = (Number(target.z) || 0) - player.position.z;
+    const dy = Math.abs((Number(target.y) || 0) - player.position.y);
+    // Require the runner to reach the destination's rooftop/elevation, not merely
+    // pass directly below it on another floor.
+    if (Math.hypot(dx, dz) <= 16 && dy <= 26) {
+      const reachedName = String(target.name || 'DESTINATION');
+      clearWaypoint(true);
+      toast('DESTINATION REACHED · ' + reachedName.toUpperCase(), 3000);
+    }
   }
   function cityMapMarkup() {
     const targets=getMapTargets(mapFilter),pos=(typeof player!=='undefined'&&player?.position)?projectWorld(player.position):projectWorld({x:0,z:0}),center=projectWorld({x:0,z:0});
@@ -10693,7 +10718,28 @@
     const waypointText=waypoint?'<div class="nr-map-waypoint-card"><div class="nr-map-waypoint-icon">'+waypoint.icon+'</div><div class="nr-map-waypoint-copy"><small>YOUR ACTIVE WAYPOINT</small><b>'+esc(waypoint.name)+'</b><span id="nr-map-live-distance">Follow the glowing arrow in the city.</span></div><button type="button" class="nr-map-clear" data-nr-waypoint-clear>CLEAR</button></div>':'<div class="nr-map-waypoint-card"><div class="nr-map-waypoint-icon">⌖</div><div class="nr-map-waypoint-copy"><small>NO ROUTE SELECTED</small><b>Choose a person or place</b><span>Tap a marker on the map or select a location below.</span></div></div>';
     const pins=targets.map(t=>{const p=projectWorld(t),active=!!store.waypoint&&store.waypoint.type===t.type&&store.waypoint.id===t.id;const pin=t.type==='npc'?'people':t.type==='quest'?'quest':'area';return '<button type="button" title="'+esc(t.name)+'" aria-label="Set waypoint to '+esc(t.name)+'" class="nr-map-pin '+pin+(active?' active':'')+'" data-nr-map-target="'+t.type+':'+t.id+'" style="left:'+p.x+'%;top:'+p.y+'%;--map-pin:'+esc(t.color||'#65e9dc')+'"><span>'+esc(t.icon||'⌖')+'</span><span class="nr-map-pin-label">'+esc(t.name)+'</span></button>';}).join('');
     const rows=targets.map(t=>{const active=!!store.waypoint&&store.waypoint.type===t.type&&store.waypoint.id===t.id;return '<button type="button" class="nr-map-target-card '+(active?'active':'')+'" data-nr-map-target="'+t.type+':'+t.id+'" style="--map-pin:'+esc(t.color||'#65e9dc')+'"><span class="nr-map-target-icon">'+esc(t.icon||'⌖')+'</span><span class="nr-map-target-copy"><b>'+esc(t.name)+'</b><small>'+esc(t.detail||'City location')+'</small></span><span class="nr-map-target-pin">'+(active?'PINNED ✓':'GO ↗')+'</span></button>';}).join('');
-    return '<section class="nr-map-screen"><div class="nr-map-heading"><div><div class="nr-map-eyebrow">NEON DISTRICT · GPS</div><h2>City Map</h2><p>Tap any marker to set a waypoint.</p></div><span class="nr-map-live-pill"><i></i> LIVE MAP</span></div>'+waypointText+'<div class="nr-city-map" id="nr-city-map"><span class="nr-map-district north">NORTH NEON</span><span class="nr-map-district east">EASTLINE</span><span class="nr-map-district south">SOUTH ROOFTOPS</span><span class="nr-map-district west">WEST END</span><svg class="nr-map-route-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><line id="nr-map-route-line" class="nr-map-route-line" x1="'+pos.x+'" y1="'+pos.y+'" x2="'+(waypoint?projectWorld(waypoint).x:pos.x)+'" y2="'+(waypoint?projectWorld(waypoint).y:pos.y)+'" style="'+(waypoint?'display:block':'display:none')+'"/></svg><div class="nr-map-spawn" title="City Center" style="left:'+center.x+'%;top:'+center.y+'%"></div>'+pins+'<div id="nr-map-player" style="left:'+pos.x+'%;top:'+pos.y+'%"><span class="nr-map-player-label">YOU</span></div></div><div class="nr-map-legend"><span><i style="--legend:#65f1da"></i>YOU</span><span><i style="--legend:#55dcff"></i>PHOTO QUEST</span><span><i style="--legend:#c889ff"></i>NPC</span><span><i style="--legend:#ffc46d"></i>AREA</span></div><div class="nr-map-filters">'+[['all','ALL'],['people','NPCS'],['areas','AREAS'],['photos','PHOTOS']].map(f=>'<button type="button" class="nr-map-filter '+(mapFilter===f[0]?'active':'')+'" data-nr-map-filter="'+f[0]+'">'+f[1]+'</button>').join('')+'</div><div class="nr-map-small-title">'+(targets.length?'LOCATIONS · '+targets.length:'NO MAP MARKERS')+'</div><div class="nr-map-list">'+(rows||'<div class="nr-map-none">Start the city to generate map markers.</div>')+'</div></section>';
+    return '<section class="nr-map-screen"><div class="nr-map-heading"><div><div class="nr-map-eyebrow">NEON DISTRICT · GPS</div><h2>City Map</h2><p>Tap any marker to set a waypoint.</p></div><span class="nr-map-live-pill"><i></i> LIVE MAP</span></div>'+waypointText+'<div class="nr-map-inspector" id="nr-map-inspector" aria-live="polite"><div class="nr-map-inspector-icon" id="nr-map-inspector-icon">⌖</div><div class="nr-map-inspector-copy"><small id="nr-map-inspector-kicker">LOCATION INSPECTOR</small><b id="nr-map-inspector-name">Hover over a map marker</b><span id="nr-map-inspector-detail">See what a location is before setting a route.</span><em id="nr-map-inspector-distance">Move your pointer over a location</em></div><button type="button" id="nr-map-inspector-action" class="nr-map-inspector-action" data-nr-map-inspect-pin="" disabled>SET WAYPOINT</button></div><div class="nr-city-map" id="nr-city-map"><span class="nr-map-district north">NORTH NEON</span><span class="nr-map-district east">EASTLINE</span><span class="nr-map-district south">SOUTH ROOFTOPS</span><span class="nr-map-district west">WEST END</span><svg class="nr-map-route-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><line id="nr-map-route-line" class="nr-map-route-line" x1="'+pos.x+'" y1="'+pos.y+'" x2="'+(waypoint?projectWorld(waypoint).x:pos.x)+'" y2="'+(waypoint?projectWorld(waypoint).y:pos.y)+'" style="'+(waypoint?'display:block':'display:none')+'"/></svg><div class="nr-map-spawn" title="City Center" style="left:'+center.x+'%;top:'+center.y+'%"></div>'+pins+'<div id="nr-map-player" style="left:'+pos.x+'%;top:'+pos.y+'%"><span class="nr-map-player-label">YOU</span></div></div><div class="nr-map-legend"><span><i style="--legend:#65f1da"></i>YOU</span><span><i style="--legend:#55dcff"></i>PHOTO QUEST</span><span><i style="--legend:#c889ff"></i>NPC</span><span><i style="--legend:#ffc46d"></i>AREA</span></div><div class="nr-map-filters">'+[['all','ALL'],['people','NPCS'],['areas','AREAS'],['photos','PHOTOS']].map(f=>'<button type="button" class="nr-map-filter '+(mapFilter===f[0]?'active':'')+'" data-nr-map-filter="'+f[0]+'">'+f[1]+'</button>').join('')+'</div><div class="nr-map-small-title">'+(targets.length?'LOCATIONS · '+targets.length:'NO MAP MARKERS')+'</div><div class="nr-map-list">'+(rows||'<div class="nr-map-none">Start the city to generate map markers.</div>')+'</div></section>';
+  }
+  function updateMapInspector(type, id, preferWaypoint=false) {
+    const card=$('nr-map-inspector');if(!card)return;
+    const all=getMapTargets('all');
+    let target=null;
+    if(type&&id)target=all.find(t=>t.type===type&&t.id===id)||null;
+    if(!target&&preferWaypoint)target=getWaypointTarget();
+    if(!target&&store.waypoint)target=getWaypointTarget();
+    const icon=$('nr-map-inspector-icon'),kicker=$('nr-map-inspector-kicker'),name=$('nr-map-inspector-name'),detail=$('nr-map-inspector-detail'),distance=$('nr-map-inspector-distance'),action=$('nr-map-inspector-action');
+    if(!target){
+      if(icon)icon.textContent='⌖';if(kicker)kicker.textContent='LOCATION INSPECTOR';if(name)name.textContent='Hover over a map marker';if(detail)detail.textContent='Preview an NPC, photo spot, or area before choosing it.';if(distance)distance.textContent='Move your pointer over a location';
+      if(action){action.disabled=true;action.dataset.nrMapInspectPin='';action.textContent='SET WAYPOINT';}
+      card.style.removeProperty('--map-pin');return;
+    }
+    const isPinned=!!store.waypoint&&store.waypoint.type===target.type&&store.waypoint.id===target.id;
+    const color=target.color||'#65e9dc';
+    if(icon)icon.textContent=target.icon||'⌖';if(kicker)kicker.textContent=isPinned?'ACTIVE WAYPOINT':(type&&id?'LOCATION PREVIEW · '+(target.type==='quest'?'PHOTO QUEST':target.type==='npc'?'NPC':'AREA'):'LOCATION INSPECTOR');
+    if(name)name.textContent=target.name||'City location';if(detail)detail.textContent=target.detail||'City location';
+    if(distance){if(typeof player!=='undefined'&&player.position){const dx=(Number(target.x)||0)-player.position.x,dz=(Number(target.z)||0)-player.position.z;distance.textContent=Math.round(Math.hypot(dx,dz))+' UNITS AWAY · '+directionLabel(dx,dz);}else distance.textContent='LOCATION READY';}
+    if(action){action.disabled=false;action.dataset.nrMapInspectPin=target.type+':'+target.id;action.textContent=isPinned?'WAYPOINT SET ✓':'SET WAYPOINT';}
+    card.style.setProperty('--map-pin',color);
   }
   function updateMapLive() {
     if(!phoneOpen||activeTab!=='map')return;
@@ -10705,6 +10751,8 @@
     if(line){if(target){const q=projectWorld(target);line.setAttribute('x1',p.x);line.setAttribute('y1',p.y);line.setAttribute('x2',q.x);line.setAttribute('y2',q.y);line.style.display='block';}else line.style.display='none';}
     const dist=$('nr-map-live-distance');
     if(dist){if(target&&player?.position){const dx=target.x-player.position.x,dz=target.z-player.position.z;dist.textContent=Math.round(Math.hypot(dx,dz))+' units away · heading '+directionLabel(dx,dz);}else dist.textContent='Set a destination from the map.';}
+    if(mapHoverKey){const parts=mapHoverKey.split(':');if(parts.length===2)updateMapInspector(parts[0],parts[1]);}
+    else updateMapInspector(null,null,true);
   }
   function makeFallbackPhoto(q) {
     const c=document.createElement('canvas');c.width=420;c.height=236;const x=c.getContext('2d');
@@ -10736,6 +10784,7 @@
     }
     const image=captureScreenshot(target); const photo={id:'nr-photo-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),questId:target.id,title:target.title,image,date:Date.now(),x:target.x,y:target.y,z:target.z,from:localName(),received:false};
     store.completed=Array.from(new Set([...store.completed,target.id]));store.photos.push(photo);store.photos=store.photos.slice(-18);store.lastName=localName();saveStore();
+    if(store.waypoint && store.waypoint.type==='quest' && store.waypoint.id===target.id) clearWaypoint(true);
     refreshMarker(target);activeQuestId=quests.find(q=>!store.completed.includes(q.id))?.id||target.id;questMarkers.forEach(m=>{const q=quests.find(v=>v.id===m.id);if(q)refreshMarker(q);});
     const completed=quests.filter(q=>store.completed.includes(q.id)).length;
     toast('PHOTO SAVED · '+target.title.toUpperCase()+' · '+completed+'/'+quests.length+' COMPLETE',3200);
@@ -10903,12 +10952,25 @@
   $('nr-phone-multiplayer').addEventListener('click',()=>{closePhone();if(typeof window.openNeonMultiplayer==='function')window.openNeonMultiplayer();else toast('MULTIPLAYER IS NOT AVAILABLE IN THIS BUILD');});
   $('nr-phone-overlay').addEventListener('click',e=>{if(e.target===$('nr-phone-overlay'))closePhone();});
   document.querySelectorAll('[data-nr-phone-tab]').forEach(b=>b.addEventListener('click',()=>{activeTab=b.dataset.nrPhoneTab;renderPhone();}));
+  function inspectMapTargetFromElement(el) {
+    if(!el||!el.dataset.nrMapTarget||activeTab!=='map')return;
+    const parts=el.dataset.nrMapTarget.split(':');if(parts.length!==2)return;
+    const target=getMapTargets('all').find(t=>t.type===parts[0]&&t.id===parts[1]);if(!target)return;
+    mapHoverKey=parts[0]+':'+parts[1];updateMapInspector(parts[0],parts[1]);
+  }
+  $('nr-phone-content').addEventListener('pointerover',e=>{
+    const el=e.target.closest('[data-nr-map-target]');if(!el)return;
+    const prior=e.relatedTarget&&e.relatedTarget.closest?e.relatedTarget.closest('[data-nr-map-target]'):null;
+    if(prior===el)return;inspectMapTargetFromElement(el);
+  });
+  $('nr-phone-content').addEventListener('focusin',e=>{const el=e.target.closest('[data-nr-map-target]');if(el)inspectMapTargetFromElement(el);});
   $('nr-phone-content').addEventListener('click',e=>{
     const el=e.target.closest('button');if(!el)return;
     if(el.dataset.nrLaunchApp){activeTab=el.dataset.nrLaunchApp;renderPhone();return;}
     if(el.dataset.nrNpcOpen){selectedNpcId=el.dataset.nrNpcOpen;const thread=store.npcThreads[selectedNpcId]||[];if(thread.length)store.npcReadAt[selectedNpcId]=Number(thread[thread.length-1].at)||Date.now();saveStore();renderPhone();return;}
     if(el.dataset.nrNpcFind){const npc=npcById(el.dataset.nrNpcFind);if(npc)setWaypoint('npc',npc.id);else toast('LOOK FOR UNKNOWN RUNNERS AROUND THE CITY',2800);return;}
     if(el.dataset.nrMapTarget){const parts=el.dataset.nrMapTarget.split(':');if(parts.length===2)setWaypoint(parts[0],parts[1]);return;}
+    if(el.dataset.nrMapInspectPin){const parts=el.dataset.nrMapInspectPin.split(':');if(parts.length===2)setWaypoint(parts[0],parts[1]);return;}
     if(el.dataset.nrMapFilter){mapFilter=el.dataset.nrMapFilter;renderPhone();return;}
     if(el.hasAttribute('data-nr-waypoint-clear')){clearWaypoint();return;}
     if(el.dataset.nrPin){selectQuest(el.dataset.nrPin);return;}
@@ -10951,7 +11013,7 @@
       checkNpcQuestCompletions();
       renderHud(false);
     }
-    syncLauncher();updatePhoneStatus();updateWaypointHud();updateWaypointBeacon(dt);updateMapLive();requestAnimationFrame(tick);
+    checkWaypointArrival();syncLauncher();updatePhoneStatus();updateWaypointHud();updateWaypointBeacon(dt);updateMapLive();requestAnimationFrame(tick);
   }
   // Keep quest markers tied to each newly generated procedural city.
   ensureNpcStore(); renderPhone(); syncLauncher(); requestAnimationFrame(tick);
@@ -10959,5 +11021,13 @@
 })();
 </script>
 
+
+<style id="nr-map-inspector-extra-styles">
+.nr-map-inspector{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:11px;border:1px solid rgba(113,219,238,.22);border-radius:14px;background:linear-gradient(120deg,rgba(20,42,65,.88),rgba(16,20,39,.94));box-shadow:inset 0 1px rgba(255,255,255,.025)}
+.nr-map-inspector-icon{display:grid;place-items:center;flex:none;width:42px;height:42px;border:1px solid color-mix(in srgb,var(--map-pin,#66e8da) 36%,transparent);border-radius:13px;background:color-mix(in srgb,var(--map-pin,#66e8da) 14%,#0b1728);font-size:22px}
+.nr-map-inspector-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}.nr-map-inspector-copy small{color:#70ead8;font:900 7px/1.3 ui-monospace,Consolas,monospace;letter-spacing:1.05px}.nr-map-inspector-copy b{color:#f0fbff;font:850 12px/1.25 system-ui,sans-serif;overflow-wrap:anywhere}.nr-map-inspector-copy span{color:#91aabd;font:600 9px/1.4 system-ui,sans-serif}.nr-map-inspector-copy em{color:#72c8da;font:800 7px/1.4 ui-monospace,Consolas,monospace;font-style:normal}
+.nr-map-inspector-action{flex:none;max-width:90px;padding:8px 7px;border:1px solid rgba(98,242,218,.4);border-radius:9px;background:rgba(36,190,165,.14);color:#a4fff0;font:900 7px/1.3 ui-monospace,Consolas,monospace;cursor:pointer}.nr-map-inspector-action:hover:not(:disabled){background:rgba(36,190,165,.26)}.nr-map-inspector-action:disabled{opacity:.35;cursor:default}
+@media(max-width:420px){.nr-map-inspector{gap:7px;padding:8px}.nr-map-inspector-icon{width:34px;height:34px;font-size:18px}.nr-map-inspector-copy b{font-size:10px}.nr-map-inspector-copy span{font-size:8px}.nr-map-inspector-action{max-width:75px;font-size:6px;padding:7px 5px}}
+</style>
 </body>
 </html>

@@ -7766,6 +7766,9 @@
   let playerGrappleStartedAt = 0;
   let localGrappleCable = null;
   let remoteGrappleCable = null;
+  // Separate visuals for the remote player's WORLD grapple (hooking a building/object).
+  let remoteWorldGrappleCable = null;
+  let remoteWorldGrappleAnchor = null;
   let grappleMessageUntil = 0;
   let applyingSharedWeather = false;
 
@@ -7888,6 +7891,8 @@
     if (grappleHint) { grappleHint.style.display = 'none'; grappleHint.dataset.active = 'false'; }
     if (localGrappleCable) localGrappleCable.group.visible = false;
     if (remoteGrappleCable) remoteGrappleCable.group.visible = false;
+    if (remoteWorldGrappleCable) remoteWorldGrappleCable.group.visible = false;
+    if (remoteWorldGrappleAnchor) remoteWorldGrappleAnchor.visible = false;
     if (channel) {
       try { channel.onopen = channel.onclose = channel.onerror = channel.onmessage = null; channel.close(); } catch (_) {}
     }
@@ -8384,6 +8389,14 @@
       grounded: !!player.onGround, sprint: !!player.isSprinting || !!keys.sprint,
       slide: !!player.isSliding, wallRun: !!player.isWallRunning,
       wallClimb: !!player.isWallClimbing, grapple: !!player.isGrappling || playerGrappleActive,
+      // Share WORLD grapple separately from player-to-player grappling so the other client
+      // can draw the cable all the way to the same world-space hook point.
+      worldGrapple: !!player.isGrappling,
+      grapplePoint: player.isGrappling ? {
+        x: +player.grapplePoint.x.toFixed(3),
+        y: +player.grapplePoint.y.toFixed(3),
+        z: +player.grapplePoint.z.toFixed(3)
+      } : null,
       playerGrapple: !!playerGrappleActive,
       zipline: !!player.isZiplining, climb: !!player.isClimbing, hanging: !!player.isHanging,
       strafe: (keys.right ? 1 : 0) - (keys.left ? 1 : 0)
@@ -8509,6 +8522,8 @@
       if (playerGrappleActive) setPlayerGrappleActive(false);
       setCable(localGrappleCable, null, null, false);
       setCable(remoteGrappleCable, null, null, false);
+      setCable(remoteWorldGrappleCable, null, null, false);
+      if (remoteWorldGrappleAnchor) remoteWorldGrappleAnchor.visible = false;
       if (grappleHint && now > grappleMessageUntil) grappleHint.style.display = 'none';
       return;
     }
@@ -8549,6 +8564,43 @@
       remoteGrappleCable.glow.material.color.setHex(nextColor);
     }
     setCable(remoteGrappleCable, remoteHand, player.position.clone().add(new THREE.Vector3(0, -.22, 0)), peerIsGrapplingMe);
+
+    // Show the remote player's normal grapple too (the hook aimed at a building/object).
+    // It is a distinct cable from the G-key player-to-player grapple above.
+    const remoteHook = lastState && lastState.grapplePoint;
+    const remoteWorldGrappling = !!(lastState && lastState.worldGrapple && remoteHook &&
+      Number.isFinite(remoteHook.x) && Number.isFinite(remoteHook.y) && Number.isFinite(remoteHook.z));
+    if (remoteWorldGrappling) {
+      if (!remoteWorldGrappleCable) remoteWorldGrappleCable = makeGrappleCable(0x00f5ff);
+      if (!remoteWorldGrappleAnchor) {
+        remoteWorldGrappleAnchor = new THREE.Group();
+        const anchorMat = new THREE.MeshBasicMaterial({
+          color: 0x7df8ff, transparent: true, opacity: .98,
+          depthTest: false, depthWrite: false
+        });
+        const core = new THREE.Mesh(new THREE.OctahedronGeometry(.28, 1), anchorMat);
+        core.name = 'RemoteWorldGrappleHookCore';
+        const ringMat = new THREE.MeshBasicMaterial({
+          color: 0x00f5ff, transparent: true, opacity: .88,
+          depthTest: false, depthWrite: false
+        });
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(.39, .035, 6, 22), ringMat);
+        ring.name = 'RemoteWorldGrappleHookRing';
+        ring.rotation.x = Math.PI / 2;
+        remoteWorldGrappleAnchor.add(core, ring);
+        remoteWorldGrappleAnchor.renderOrder = 999;
+        scene.add(remoteWorldGrappleAnchor);
+      }
+      const hookPoint = new THREE.Vector3(remoteHook.x, remoteHook.y, remoteHook.z);
+      setCable(remoteWorldGrappleCable, remoteHand, hookPoint, true);
+      remoteWorldGrappleAnchor.position.copy(hookPoint);
+      remoteWorldGrappleAnchor.visible = true;
+      remoteWorldGrappleAnchor.rotation.y += dt * 2.2;
+      remoteWorldGrappleAnchor.rotation.z += dt * 1.1;
+    } else {
+      setCable(remoteWorldGrappleCable, null, null, false);
+      if (remoteWorldGrappleAnchor) remoteWorldGrappleAnchor.visible = false;
+    }
 
     if (grappleHint && now > grappleMessageUntil) {
       grappleHint.textContent = 'G · GRAPPLE PLAYER  /  G · RELEASE  /  V · THIRD PERSON';

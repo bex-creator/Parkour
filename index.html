@@ -952,6 +952,16 @@
 
         // ... [Input Listeners unchanged] ...
         document.addEventListener('mousedown', (e) => {
+            // UI clicks must never capture the gameplay mouse. The phone overlay and its
+            // launcher are separate from the world controls and deliberately keep the
+            // pointer free; otherwise this handler races the phone's click-to-open logic.
+            const phoneOverlay = document.getElementById('nr-phone-overlay');
+            const phoneLauncher = document.getElementById('nr-phone-launcher');
+            const waypointHud = document.getElementById('nr-waypoint-hud');
+            if ((typeof window.__nrPhoneIsOpen === 'function' && window.__nrPhoneIsOpen()) ||
+                (phoneOverlay && phoneOverlay.contains(e.target)) ||
+                (phoneLauncher && phoneLauncher.contains(e.target)) ||
+                (waypointHud && waypointHud.contains(e.target))) return;
             if (!GAME_STARTED) return;
             if (document.getElementById('admin-panel').style.display === 'block') return;
             if (document.pointerLockElement !== document.body) document.body.requestPointerLock();
@@ -960,6 +970,13 @@
         document.addEventListener('mouseup', (e) => { if (e.button === 0) endGrapple(); });
         document.addEventListener('pointerlockchange', () => {
             if (!GAME_STARTED) return;
+            // Opening the phone intentionally releases pointer lock. Do not let the
+            // normal pause/instructions handler treat that UI transition as a game pause.
+            if (typeof window.__nrPhoneIsOpen === 'function' && window.__nrPhoneIsOpen()) {
+                instructions.style.display = 'none';
+                endGrapple();
+                return;
+            }
             if(document.getElementById('admin-panel').style.display === 'block') {
                 instructions.style.display = 'none';
             } else {
@@ -10103,24 +10120,74 @@
 @media(max-width:520px){#nr-phone-launcher{top:auto;bottom:201px;right:10px;padding:9px 10px;font-size:9px}#nr-photo-hud{bottom:12px}#nr-phone-device{width:100%;height:calc(100dvh - 14px);max-height:calc(100dvh - 14px);min-height:0;border-radius:20px}#nr-phone-top{padding:13px 13px 10px}#nr-phone-tabs{padding-left:8px;padding-right:8px;gap:4px}.nr-phone-tab{padding:8px 2px;font-size:7px}#nr-phone-content{padding:10px}.nr-phone-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.nr-phone-quest{padding:8px}.nr-phone-quest p{min-height:48px}.nr-phone-quest-art{height:45px}.nr-phone-panel{padding:10px}}
 @media(max-width:350px){.nr-phone-grid{grid-template-columns:1fr}.nr-phone-quest p{min-height:0}}
 </style>
+
+<style id="neon-phone-redesign">
+/* A true handset silhouette with a glass screen and modern app launcher. */
+#nr-phone-overlay{padding:14px;background:radial-gradient(ellipse at 18% 10%,rgba(255,74,208,.18),transparent 32%),radial-gradient(ellipse at 84% 82%,rgba(51,190,255,.18),transparent 35%),rgba(1,3,10,.82);backdrop-filter:blur(16px)}
+#nr-phone-device{position:relative;width:min(426px,calc(100vw - 28px));height:min(850px,calc(100dvh - 28px));min-height:560px;display:flex;flex-direction:column;overflow:hidden;border:7px solid #11151d;border-radius:43px;background:#080d19;box-shadow:0 35px 120px rgba(0,0,0,.78),0 0 0 1px rgba(255,255,255,.2),0 0 60px rgba(61,195,255,.11),inset 0 0 0 1px rgba(255,255,255,.13)}
+#nr-phone-device:before{content:"";position:absolute;z-index:20;top:6px;left:50%;transform:translateX(-50%);width:105px;height:25px;border-radius:20px;background:#030508;box-shadow:inset 0 1px 2px rgba(255,255,255,.06);pointer-events:none}
+#nr-phone-device:after{content:"";position:absolute;z-index:19;top:14px;left:calc(50% + 27px);width:7px;height:7px;border-radius:50%;background:#17263b;box-shadow:0 0 0 2px #090d16;pointer-events:none}
+#nr-phone-top{position:relative;z-index:1;flex:none;padding:10px 17px 14px;border:0;background:radial-gradient(ellipse at 8% 0%,rgba(68,226,255,.18),transparent 48%),radial-gradient(ellipse at 95% 100%,rgba(255,80,207,.13),transparent 42%),linear-gradient(180deg,#111a2c,#0b1222 90%)}
+.nr-phone-statusbar{height:24px;display:flex;align-items:center;justify-content:space-between;padding:0 4px;color:#f7fbff;font:800 10px/1 system-ui,sans-serif;letter-spacing:.15px}
+.nr-phone-status-icons{display:flex;align-items:center;gap:5px;font-size:9px;color:#f2f8ff}.nr-phone-battery{position:relative;width:17px;height:9px;border:1.4px solid #f2f8ff;border-radius:3px;display:inline-flex;align-items:center;padding:1px}.nr-phone-battery:after{content:"";position:absolute;right:-3px;width:2px;height:4px;border-radius:0 2px 2px 0;background:#f2f8ff}.nr-phone-battery i{display:block;width:75%;height:100%;border-radius:1px;background:#63f4d4}
+.nr-phone-top-row{margin-top:14px;min-height:42px}.nr-phone-brand{gap:10px}.nr-phone-app-icon{width:39px;height:39px;border:1px solid rgba(117,245,225,.42);border-radius:13px;background:linear-gradient(145deg,#42f4d5,#3aa9ff 55%,#a16aff);color:#06121d;font-size:21px;box-shadow:0 6px 18px rgba(48,219,236,.17)}.nr-phone-title{font:900 14px/1.05 system-ui,sans-serif;letter-spacing:1.35px}.nr-phone-sub{font:700 8px/1.4 system-ui,sans-serif;letter-spacing:1.05px;color:#8daac1}.nr-phone-close{width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.08);color:#e8f7ff;font:300 23px/1 system-ui,sans-serif;box-shadow:inset 0 1px rgba(255,255,255,.05)}
+#nr-phone-status-row{margin-top:11px;padding:7px 9px;min-height:32px;display:flex;gap:7px;border-radius:10px;border:1px solid rgba(153,205,234,.12);background:rgba(2,8,18,.45);color:#91acbf;font:700 8px/1.3 system-ui,sans-serif;letter-spacing:.1px;backdrop-filter:blur(12px)}.nr-phone-status-label{display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden}.nr-phone-status-label #nr-phone-status{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.nr-phone-mini-btn{border:1px solid rgba(92,231,219,.2);border-radius:7px;background:rgba(43,202,195,.1);color:#8df7e4;padding:6px 8px;font:800 8px system-ui,sans-serif;letter-spacing:.3px}
+#nr-phone-appbar{flex:none;display:flex;align-items:center;gap:11px;padding:11px 16px;border-top:1px solid rgba(255,255,255,.035);border-bottom:1px solid rgba(145,193,222,.10);background:linear-gradient(90deg,rgba(19,30,49,.92),rgba(12,18,32,.92))}.nr-phone-back{width:33px;height:33px;flex:none;border:1px solid rgba(174,212,235,.12);border-radius:11px;background:rgba(255,255,255,.045);color:#b8eaff;font:400 29px/20px system-ui,sans-serif;cursor:pointer}.nr-phone-appbar-copy{display:flex;min-width:0;flex:1;flex-direction:column;gap:3px}.nr-phone-appbar-copy strong{color:#f5fbff;font:850 12px/1.2 system-ui,sans-serif;letter-spacing:.15px}.nr-phone-appbar-copy span{color:#7f9db4;font:650 9px/1.2 system-ui,sans-serif}.nr-phone-appbar-live{display:inline-flex;align-items:center;gap:5px;color:#8da9be;font:800 7px/1 ui-monospace,monospace;letter-spacing:.7px}.nr-phone-appbar-live i{width:5px;height:5px;border-radius:50%;background:#5affd0;box-shadow:0 0 8px #5affd0}
+#nr-phone-content{flex:1;min-height:0;overflow:auto;padding:0 14px 18px;background:radial-gradient(ellipse at 10% 0%,rgba(37,142,196,.12),transparent 42%),radial-gradient(ellipse at 100% 42%,rgba(151,63,170,.10),transparent 45%),linear-gradient(180deg,#0d1728,#090f1e 65%,#101022);overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#2e4d63 transparent}#nr-phone-content::-webkit-scrollbar{width:4px}#nr-phone-content::-webkit-scrollbar-thumb{background:#29485c;border-radius:5px}
+#nr-phone-tabs{position:relative;z-index:2;flex:none;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:3px;padding:9px 8px 8px;border-top:1px solid rgba(175,215,237,.12);background:rgba(9,15,28,.96);backdrop-filter:blur(20px)}.nr-phone-tab{position:relative;display:flex;min-width:0;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:7px 1px 6px;border:1px solid transparent;border-radius:12px;background:transparent;color:#718ba2;font:750 8px/1 system-ui,sans-serif;letter-spacing:0;white-space:nowrap}.nr-phone-tab .nr-phone-tab-icon{display:grid;place-items:center;width:28px;height:27px;margin:0;border-radius:9px;font:700 20px/1 system-ui,sans-serif;color:#a9c4d7}.nr-phone-tab.active{border-color:rgba(98,219,223,.1);background:rgba(72,174,197,.08);color:#d8faff;box-shadow:none}.nr-phone-tab.active .nr-phone-tab-icon{color:#06131d;background:linear-gradient(145deg,#75f4dc,#4bbff7);box-shadow:0 4px 14px rgba(50,203,231,.17)}.nr-phone-tab[data-nr-phone-tab="quests"] .nr-phone-tab-icon{color:#fff;background:linear-gradient(145deg,#ff8a5b,#ec4ab3)}.nr-phone-tab[data-nr-phone-tab="gallery"] .nr-phone-tab-icon{color:#fff;background:linear-gradient(145deg,#6f8cff,#b17dff)}.nr-phone-tab[data-nr-phone-tab="messages"] .nr-phone-tab-icon{color:#fff;background:linear-gradient(145deg,#29d7b4,#0c9fb9)}.nr-phone-tab[data-nr-phone-tab="contacts"] .nr-phone-tab-icon{color:#fff;background:linear-gradient(145deg,#47b6ff,#5b7cff)}.nr-phone-tab[data-nr-phone-tab="npcs"] .nr-phone-tab-icon{color:#fff;background:linear-gradient(145deg,#c36dff,#ff70b7)}.nr-phone-tab[data-nr-phone-tab="home"] .nr-phone-tab-icon{font-size:21px}.nr-npc-tab-count{position:absolute;top:3px;right:5px;min-width:14px;height:14px;border:1px solid #0a1221;box-shadow:0 0 0 1px rgba(255,106,207,.2);font:900 8px/1 system-ui,sans-serif}
+.nr-phone-foot{position:relative;display:flex;flex:none;align-items:center;justify-content:center;min-height:21px;padding:0 0 5px;border:0;background:#090f1e;color:#55718a;font:700 7px/1 system-ui,sans-serif;letter-spacing:.9px}.nr-phone-home-indicator{position:absolute;bottom:5px;left:50%;width:84px;height:3px;transform:translateX(-50%);border-radius:6px;background:rgba(235,246,255,.68)}.nr-phone-foot-copy{opacity:.5;transform:translateY(-1px)}
+.nr-home-screen{padding-top:18px;padding-bottom:6px}.nr-home-greeting{padding:2px 3px 16px}.nr-home-eyebrow{display:flex;align-items:center;gap:7px;color:#8caec4;font:800 8px/1.4 system-ui,sans-serif;letter-spacing:1.15px}.nr-home-dot{width:6px;height:6px;border-radius:50%;background:#5bf4d3;box-shadow:0 0 12px #5bf4d3}.nr-home-greeting h2{margin:11px 0 5px;color:#f5fbff;font:850 clamp(25px,6vw,32px)/1.08 system-ui,sans-serif;letter-spacing:-.9px}.nr-home-greeting h2 span{color:#62e8d7}.nr-home-greeting p{margin:0;color:#99b3c8;font:500 11px/1.5 system-ui,sans-serif}.nr-home-widget{padding:15px;border:1px solid rgba(134,217,236,.2);border-radius:19px;background:radial-gradient(ellipse at 0% 0%,rgba(61,224,210,.13),transparent 55%),linear-gradient(135deg,rgba(28,47,69,.94),rgba(16,21,41,.95) 60%,rgba(38,21,50,.91));box-shadow:0 12px 28px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.045)}.nr-home-widget-top{display:flex;justify-content:space-between;align-items:center}.nr-home-widget-kicker{color:#83b3c8;font:850 8px/1.5 system-ui,sans-serif;letter-spacing:1.3px}.nr-home-widget-top h3{margin:4px 0 0;color:#f6fcff;font:850 18px/1.15 system-ui,sans-serif}.nr-home-avatar{width:44px;height:44px;display:grid;place-items:center;border-radius:15px;background:linear-gradient(145deg,#64f1d5,#55aef8 60%,#be78ff);color:#061421;font-size:25px;box-shadow:0 8px 24px rgba(71,194,229,.17)}.nr-home-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:18px}.nr-home-stats>div{display:flex;flex-direction:column;gap:4px;padding:10px 8px;border:1px solid rgba(180,218,237,.09);border-radius:11px;background:rgba(5,12,24,.24)}.nr-home-stats strong{color:#ecfbff;font:850 17px/1 system-ui,sans-serif}.nr-home-stats strong small{font-size:10px;color:#7e9eb4}.nr-home-stats>div span{color:#7f9eb4;font:800 7px/1.3 system-ui,sans-serif;letter-spacing:.65px}.nr-home-progress{height:5px;margin-top:13px;overflow:hidden;border-radius:9px;background:rgba(255,255,255,.08)}.nr-home-progress span{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,#4ce4c7,#55baff,#cb76ff);box-shadow:0 0 12px rgba(83,231,219,.4)}.nr-home-widget-foot{display:flex;justify-content:space-between;gap:10px;margin-top:8px;color:#7899b1;font:750 7px/1.4 system-ui,sans-serif;letter-spacing:.65px}.nr-home-widget-foot b{color:#95f4e2;font-weight:850}.nr-home-section-head{display:flex;justify-content:space-between;align-items:flex-end;margin:21px 2px 11px}.nr-home-section-head>div>span{color:#78a2bb;font:850 7px/1.4 system-ui,sans-serif;letter-spacing:1.7px}.nr-home-section-head h3{margin:3px 0 0;color:#f1f8ff;font:850 17px/1.2 system-ui,sans-serif;letter-spacing:-.3px}.nr-home-section-head>small{color:#7c98af;font:800 8px system-ui,sans-serif;letter-spacing:.5px}.nr-home-app-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.nr-home-app{position:relative;display:flex;min-width:0;min-height:113px;flex-direction:column;align-items:flex-start;justify-content:flex-start;padding:10px 9px;border:1px solid rgba(144,190,215,.13);border-radius:15px;background:linear-gradient(150deg,rgba(25,41,61,.94),rgba(13,21,37,.98));color:#f0f8ff;text-align:left;cursor:pointer;transition:transform .16s,border-color .16s,background .16s;box-shadow:inset 0 1px rgba(255,255,255,.035)}.nr-home-app:hover,.nr-home-app:focus-visible{transform:translateY(-2px);border-color:rgba(111,232,227,.42);outline:none;background:linear-gradient(150deg,rgba(32,57,77,.98),rgba(14,22,40,.98))}.nr-home-app-icon{position:relative;display:grid;place-items:center;width:43px;height:43px;margin-bottom:9px;border:1px solid rgba(255,255,255,.12);border-radius:14px;color:white;font:700 24px/1 system-ui,sans-serif;box-shadow:0 5px 14px rgba(0,0,0,.16)}.app-photo{background:linear-gradient(145deg,#ff9766,#f052ac)}.app-gallery{background:linear-gradient(145deg,#8b9cff,#9261ed)}.app-messages{background:linear-gradient(145deg,#45e0c0,#138db8)}.app-contacts{background:linear-gradient(145deg,#67caff,#5875eb)}.app-npcs{background:linear-gradient(145deg,#e16cff,#fa6eac)}.nr-home-app>strong{font:800 9px/1.3 system-ui,sans-serif;color:#edf8ff;overflow-wrap:anywhere}.nr-home-app>small{margin-top:4px;color:#85a2b8;font:550 8px/1.4 system-ui,sans-serif}.nr-home-app>em{margin-top:5px;color:#8df2dd;font:750 7px/1.3 system-ui,sans-serif;font-style:normal}.nr-app-badge{position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;padding:0 4px;display:grid;place-items:center;border:2px solid #16243a;border-radius:12px;background:#ff639f;color:#250b1e;font:900 8px/1 system-ui,sans-serif}.nr-home-connect{display:flex;align-items:center;gap:11px;width:100%;margin-top:13px;padding:12px;border:1px solid rgba(99,213,224,.19);border-radius:14px;background:linear-gradient(100deg,rgba(37,95,108,.24),rgba(42,39,91,.19));color:#f1fbff;text-align:left;cursor:pointer}.nr-home-connect-icon{display:grid;place-items:center;flex:none;width:36px;height:36px;border-radius:12px;background:rgba(72,227,216,.12);color:#77f4e1;font:700 24px/1 system-ui,sans-serif}.nr-home-connect>span:nth-child(2){display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}.nr-home-connect strong{font:800 10px/1.2 system-ui,sans-serif}.nr-home-connect small{color:#8faabd;font:550 8px/1.4 system-ui,sans-serif}.nr-home-arrow{color:#80dfed;font-size:17px}.nr-home-caption{display:flex;justify-content:center;align-items:center;gap:8px;padding:16px 0 2px;color:#526e83;font:800 7px/1.4 system-ui,sans-serif;letter-spacing:1.7px}.nr-home-caption span{color:#5bdccf}
+/* Apply the same clean visual language to all app surfaces. */
+.nr-phone-panel{padding:14px;border:1px solid rgba(136,196,223,.15);border-radius:15px;background:linear-gradient(145deg,rgba(24,42,63,.84),rgba(12,20,36,.9));box-shadow:inset 0 1px rgba(255,255,255,.025)}.nr-phone-section-kicker{color:#7eebdf;font:850 8px/1.6 system-ui,sans-serif;letter-spacing:1.4px}.nr-phone-panel h3{font:800 13px/1.35 system-ui,sans-serif;letter-spacing:-.1px}.nr-phone-panel p{color:#9ab1c4;font:500 10px/1.6 system-ui,sans-serif}.nr-phone-primary,.nr-phone-secondary,.nr-phone-danger{border-radius:10px;padding:10px 12px;font:850 8px/1.3 system-ui,sans-serif;letter-spacing:.4px;transition:filter .15s,transform .15s}.nr-phone-primary:hover,.nr-phone-secondary:hover,.nr-phone-danger:hover{filter:brightness(1.14);transform:translateY(-1px)}.nr-phone-quest{padding:11px;border-radius:14px;background:linear-gradient(145deg,rgba(23,42,63,.9),rgba(11,19,34,.94));border-color:rgba(140,190,218,.14)}.nr-phone-quest-art{height:72px;border-radius:11px;background:radial-gradient(ellipse,rgba(75,202,255,.18),transparent 67%),linear-gradient(145deg,#193148,#11152a);font-size:29px}.nr-phone-quest h3{font:800 11px/1.35 system-ui,sans-serif}.nr-phone-quest p{font:500 9px/1.55 system-ui,sans-serif;color:#94aec1}.nr-phone-chat{border-radius:14px;background:rgba(3,9,18,.34);border-color:rgba(137,191,218,.13)}.nr-phone-bubble{border-radius:14px 14px 14px 5px;background:rgba(40,61,83,.74);padding:10px 12px}.nr-phone-bubble.out{border-radius:14px 14px 5px 14px;background:linear-gradient(135deg,rgba(21,127,128,.48),rgba(42,85,139,.42))}.nr-phone-bubble .sender{font:800 8px/1.35 system-ui,sans-serif}.nr-phone-bubble .body{font:500 11px/1.55 system-ui,sans-serif}.nr-phone-compose input{border-radius:13px;background:rgba(5,14,27,.92);font:500 11px system-ui,sans-serif}.nr-phone-contact-row{border-radius:14px;background:linear-gradient(145deg,rgba(22,40,61,.88),rgba(11,20,35,.9));padding:12px}.nr-phone-contact-avatar{border-radius:14px;width:43px;height:43px}.nr-phone-contact-info b{font:800 11px/1.3 system-ui,sans-serif}.nr-phone-contact-info span{font:500 9px/1.5 system-ui,sans-serif}
+@media(max-width:520px){#nr-phone-overlay{padding:7px}#nr-phone-device{width:100%;height:calc(100dvh - 14px);max-height:calc(100dvh - 14px);min-height:0;border-width:5px;border-radius:34px}#nr-phone-device:before{top:4px;width:88px;height:20px}#nr-phone-device:after{top:10px;left:calc(50% + 22px);width:6px;height:6px}#nr-phone-top{padding:8px 12px 11px}.nr-phone-top-row{margin-top:12px}.nr-phone-statusbar{height:22px}#nr-phone-status-row{margin-top:9px;padding:6px 7px}#nr-phone-appbar{padding:9px 12px}#nr-phone-content{padding-left:11px;padding-right:11px}#nr-phone-tabs{padding:7px 4px 6px;gap:1px}.nr-phone-tab{font-size:7px}.nr-phone-tab .nr-phone-tab-icon{width:27px;height:25px}.nr-home-screen{padding-top:13px}.nr-home-app-grid{gap:6px}.nr-home-app{padding:8px 7px;min-height:105px}.nr-home-app-icon{width:39px;height:39px;border-radius:13px}.nr-home-app>strong{font-size:8px}.nr-home-app>small{font-size:7px}.nr-phone-foot-copy{display:none}}
+@media(max-width:350px){.nr-phone-appbar-live{display:none}.nr-home-stats{gap:5px}.nr-home-stats>div{padding:8px 5px}.nr-home-app-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.nr-home-app{min-height:98px}.nr-phone-tab{font-size:6px}.nr-phone-tab .nr-phone-tab-icon{width:24px;height:24px}}
+@media(max-height:620px){#nr-phone-device{height:calc(100dvh - 14px);min-height:0}#nr-phone-device:before{height:18px;width:78px}#nr-phone-top{padding-top:4px;padding-bottom:7px}.nr-phone-top-row{margin-top:9px}#nr-phone-status-row{margin-top:6px}#nr-phone-appbar{padding-top:7px;padding-bottom:7px}.nr-home-greeting{padding-bottom:9px}.nr-home-widget{padding:10px}.nr-home-section-head{margin-top:13px}}
+</style>
+<style id="nr-city-map-styles">
+#nr-phone-tabs{grid-template-columns:repeat(7,minmax(0,1fr))!important;gap:1px!important;padding-left:5px!important;padding-right:5px!important}
+.nr-phone-tab{padding-left:0!important;padding-right:0!important;font-size:7px!important;letter-spacing:0!important}
+.nr-phone-tab .nr-phone-tab-icon{width:27px!important;height:25px!important;font-size:18px!important}
+.nr-phone-tab[data-nr-phone-tab="map"] .nr-phone-tab-icon{color:#fff;background:linear-gradient(145deg,#43dbc9,#2878c8)}
+.app-map{background:linear-gradient(145deg,#42e1c6,#238bd4)}
+#nr-waypoint-hud{display:none;position:fixed;z-index:4340;left:50%;top:18px;transform:translateX(-50%);width:min(360px,calc(100vw - 24px));align-items:center;gap:10px;padding:9px 10px;border:1px solid rgba(95,231,220,.38);border-radius:14px;background:linear-gradient(120deg,rgba(4,18,31,.92),rgba(15,14,34,.91));box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 24px rgba(56,216,222,.08);backdrop-filter:blur(12px);color:#edfaff;font-family:Inter,Segoe UI,Arial,sans-serif;pointer-events:auto}
+#nr-waypoint-arrow-wrap{width:38px;height:38px;flex:none;display:grid;place-items:center;border:1px solid rgba(94,245,222,.25);border-radius:12px;background:rgba(62,219,208,.09);color:#76ffe7;font-size:25px;text-shadow:0 0 14px rgba(80,255,228,.55)}
+#nr-waypoint-arrow{display:block;transform:rotate(0deg);transition:transform .12s linear}
+#nr-waypoint-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}#nr-waypoint-copy small{color:#70d9d9;font:900 7px/1.2 ui-monospace,Consolas,monospace;letter-spacing:1.5px}#nr-waypoint-copy b{overflow:hidden;color:#f3fcff;font-size:12px;text-overflow:ellipsis;white-space:nowrap}#nr-waypoint-distance{color:#92adbf;font:800 8px/1.35 ui-monospace,Consolas,monospace;letter-spacing:.5px}
+#nr-waypoint-clear{width:28px;height:28px;flex:none;border:1px solid rgba(205,230,245,.13);border-radius:9px;background:rgba(255,255,255,.04);color:#b4ccdb;font-size:19px;cursor:pointer}#nr-waypoint-clear:hover{background:rgba(255,91,155,.18);color:#fff}
+.nr-map-screen{padding:2px 0 12px}.nr-map-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:1px 2px 12px}.nr-map-eyebrow{color:#69e9d4;font:900 8px/1.5 ui-monospace,Consolas,monospace;letter-spacing:1.6px}.nr-map-heading h2{margin:4px 0 4px;color:#f4fbff;font:850 25px/1.05 system-ui,sans-serif;letter-spacing:-.8px}.nr-map-heading p{margin:0;color:#8ea9be;font:500 10px/1.5 system-ui,sans-serif}.nr-map-live-pill{display:inline-flex;align-items:center;gap:5px;flex:none;padding:6px 8px;border:1px solid rgba(75,233,206,.25);border-radius:20px;background:rgba(30,160,137,.08);color:#8ef5dc;font:850 7px ui-monospace,Consolas,monospace;letter-spacing:.7px}.nr-map-live-pill i{width:5px;height:5px;border-radius:50%;background:#4af2c6;box-shadow:0 0 8px #4af2c6}
+.nr-city-map{position:relative;isolation:isolate;width:100%;aspect-ratio:1.02/1;max-height:410px;overflow:hidden;border:1px solid rgba(106,212,231,.26);border-radius:20px;background-color:#081629;background-image:radial-gradient(ellipse at 47% 43%,rgba(46,105,151,.20),transparent 48%),repeating-linear-gradient(0deg,transparent 0 28px,rgba(69,126,160,.12) 29px 30px),repeating-linear-gradient(90deg,transparent 0 28px,rgba(69,126,160,.12) 29px 30px),linear-gradient(32deg,transparent 47%,rgba(56,118,150,.15) 47.4% 48.2%,transparent 48.6%),linear-gradient(143deg,transparent 38%,rgba(56,118,150,.17) 38.3% 39%,transparent 39.4%);box-shadow:inset 0 0 45px rgba(0,0,0,.26)}
+.nr-city-map:before{content:"";position:absolute;inset:-15%;z-index:-1;opacity:.54;background:repeating-linear-gradient(24deg,transparent 0 52px,rgba(42,89,124,.42) 53px 59px,transparent 60px 84px),repeating-linear-gradient(112deg,transparent 0 66px,rgba(42,89,124,.32) 67px 72px,transparent 73px 105px);transform:rotate(-4deg)}
+.nr-map-district{position:absolute;z-index:0;color:rgba(111,166,194,.24);font:900 8px ui-monospace,Consolas,monospace;letter-spacing:1.7px;pointer-events:none;white-space:nowrap}.nr-map-district.north{top:7%;left:50%;transform:translateX(-50%)}.nr-map-district.east{right:4%;top:51%;transform:rotate(90deg);transform-origin:right center}.nr-map-district.south{bottom:6%;left:50%;transform:translateX(-50%)}.nr-map-district.west{left:4%;top:52%;transform:rotate(-90deg);transform-origin:left center}
+.nr-map-route-svg{position:absolute;inset:0;width:100%;height:100%;z-index:1;overflow:visible;pointer-events:none}.nr-map-route-line{stroke:#61f7dc;stroke-width:.65;stroke-dasharray:1.7 1.5;stroke-linecap:round;filter:drop-shadow(0 0 1px rgba(70,255,225,.9));opacity:.88}.nr-map-spawn{position:absolute;z-index:2;left:50%;top:50%;width:12px;height:12px;transform:translate(-50%,-50%);border:2px solid #9beaff;border-radius:50%;background:#276aa0;box-shadow:0 0 0 4px rgba(81,198,255,.12),0 0 18px rgba(75,210,255,.32);pointer-events:none}
+.nr-map-pin{position:absolute;z-index:3;display:grid;place-items:center;width:22px;height:22px;padding:0;transform:translate(-50%,-50%);border:1px solid color-mix(in srgb,var(--map-pin,#57f1dc) 65%,white);border-radius:8px;background:color-mix(in srgb,var(--map-pin,#57f1dc) 22%,#071421);color:#fff;font:800 11px/1 system-ui,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.32),0 0 10px color-mix(in srgb,var(--map-pin,#57f1dc) 18%,transparent);cursor:pointer;transition:transform .12s,box-shadow .12s}.nr-map-pin:hover,.nr-map-pin.active{z-index:5;transform:translate(-50%,-50%) scale(1.22);box-shadow:0 0 0 3px color-mix(in srgb,var(--map-pin,#57f1dc) 19%,transparent),0 0 20px color-mix(in srgb,var(--map-pin,#57f1dc) 50%,transparent)}.nr-map-pin.active{border-color:#fff}.nr-map-pin.quest{border-radius:50%}.nr-map-pin.area{border-radius:50%;background:#182843}.nr-map-pin-label{position:absolute;left:50%;top:calc(100% + 4px);display:none;max-width:115px;overflow:hidden;padding:4px 6px;transform:translateX(-50%);border:1px solid rgba(114,223,228,.25);border-radius:6px;background:rgba(2,10,21,.92);color:#eafaff;font:800 7px/1.3 ui-monospace,Consolas,monospace;text-overflow:ellipsis;white-space:nowrap;pointer-events:none}.nr-map-pin.active .nr-map-pin-label{display:block}
+#nr-map-player{position:absolute;z-index:6;left:50%;top:50%;width:15px;height:15px;transform:translate(-50%,-50%);border:2px solid #fff;border-radius:50%;background:#64f2dc;box-shadow:0 0 0 4px rgba(92,255,222,.16),0 0 18px rgba(92,255,222,.7);pointer-events:none}.nr-map-player-label{position:absolute;left:50%;top:calc(100% + 5px);transform:translateX(-50%);color:#a8fff0;font:900 7px ui-monospace,Consolas,monospace;letter-spacing:1px;text-shadow:0 1px 4px #001}.nr-map-legend{display:flex;justify-content:center;flex-wrap:wrap;gap:12px;margin:9px 0 13px;color:#829eb3;font:800 7px/1.4 ui-monospace,Consolas,monospace;letter-spacing:.5px}.nr-map-legend span{display:inline-flex;align-items:center;gap:5px}.nr-map-legend i{display:inline-block;width:7px;height:7px;border-radius:3px;background:var(--legend)}
+.nr-map-waypoint-card{display:flex;align-items:center;gap:11px;margin:0 0 14px;padding:12px;border:1px solid rgba(91,235,211,.24);border-radius:15px;background:linear-gradient(120deg,rgba(18,91,92,.21),rgba(37,52,96,.22))}.nr-map-waypoint-icon{display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:13px;background:rgba(81,241,218,.10);color:#86f7e4;font-size:21px}.nr-map-waypoint-copy{flex:1;min-width:0}.nr-map-waypoint-copy small{display:block;color:#6fe9d7;font:900 7px/1.5 ui-monospace,Consolas,monospace;letter-spacing:1.2px}.nr-map-waypoint-copy b{display:block;margin:3px 0;color:#f3fbff;font:800 12px/1.3 system-ui,sans-serif;overflow-wrap:anywhere}.nr-map-waypoint-copy span{display:block;color:#8baabe;font:600 8px/1.45 ui-monospace,Consolas,monospace}.nr-map-clear{border:1px solid rgba(197,224,239,.18);border-radius:9px;background:rgba(255,255,255,.04);color:#d5e8f3;padding:8px;font:850 7px ui-monospace,Consolas,monospace;cursor:pointer}.nr-map-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:0 0 10px}.nr-map-filter{min-width:0;padding:9px 3px;border:1px solid rgba(123,174,203,.15);border-radius:9px;background:rgba(255,255,255,.025);color:#8ca9bd;font:850 7px ui-monospace,Consolas,monospace;cursor:pointer}.nr-map-filter.active{border-color:rgba(95,238,218,.42);background:rgba(36,160,147,.14);color:#b3fff0}.nr-map-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.nr-map-target-card{display:flex;align-items:center;gap:8px;min-width:0;padding:9px 8px;border:1px solid rgba(130,182,210,.13);border-radius:12px;background:linear-gradient(145deg,rgba(21,39,59,.8),rgba(10,18,32,.88));color:#eaf8ff;text-align:left;cursor:pointer}.nr-map-target-card.active{border-color:rgba(100,243,222,.55);background:linear-gradient(145deg,rgba(27,83,83,.45),rgba(15,30,47,.92));box-shadow:inset 0 0 0 1px rgba(100,243,222,.08)}.nr-map-target-icon{display:grid;place-items:center;flex:none;width:30px;height:30px;border-radius:10px;background:color-mix(in srgb,var(--map-pin,#5ee9d5) 18%,#0d1b2b);border:1px solid color-mix(in srgb,var(--map-pin,#5ee9d5) 26%,transparent);font-size:16px}.nr-map-target-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}.nr-map-target-copy b{overflow:hidden;color:#eaf8ff;font:800 8px/1.3 system-ui,sans-serif;text-overflow:ellipsis;white-space:nowrap}.nr-map-target-copy small{color:#7797ad;font:750 7px/1.3 ui-monospace,Consolas,monospace;letter-spacing:.2px}.nr-map-target-pin{flex:none;color:#70f0db;font:900 7px ui-monospace,Consolas,monospace}.nr-map-small-title{margin:15px 2px 8px;color:#91aebf;font:900 8px ui-monospace,Consolas,monospace;letter-spacing:1.3px}.nr-map-none{padding:24px 12px;border:1px dashed rgba(127,180,210,.2);border-radius:13px;color:#819db0;text-align:center;font:600 10px/1.6 system-ui,sans-serif}
+@media(max-width:420px){#nr-waypoint-hud{top:7px;width:calc(100vw - 18px);padding:7px}#nr-waypoint-arrow-wrap{width:32px;height:32px}#nr-waypoint-copy b{font-size:10px}#nr-waypoint-distance{font-size:7px}.nr-map-list{grid-template-columns:1fr}.nr-map-heading h2{font-size:22px}.nr-map-target-card{padding:8px}.nr-map-pin{width:19px;height:19px;font-size:9px}}
+@media(max-height:620px){#nr-phone-tabs{padding-top:5px!important;padding-bottom:4px!important}.nr-phone-tab{gap:2px!important}.nr-phone-tab .nr-phone-tab-icon{height:22px!important;width:24px!important}.nr-phone-foot-copy{display:none}}
+</style>
 <button id="nr-phone-launcher" type="button" aria-label="Open runner phone">📱 PHONE · P</button>
 <div id="nr-photo-hud" aria-live="polite"><div id="nr-photo-hud-title">PHOTO QUEST · SPAWN TOWER COVER</div><div id="nr-photo-hud-copy">Follow the glowing camera marker and find a good rooftop angle.</div><div id="nr-photo-hud-action">F · TAKE PHOTO</div></div>
+<div id="nr-waypoint-hud" aria-live="polite"><div id="nr-waypoint-arrow-wrap"><span id="nr-waypoint-arrow">↑</span></div><div id="nr-waypoint-copy"><small>ACTIVE WAYPOINT</small><b id="nr-waypoint-title">City Center</b><span id="nr-waypoint-distance">OPEN MAP TO SET A ROUTE</span></div><button type="button" id="nr-waypoint-clear" aria-label="Clear waypoint" title="Clear waypoint">×</button></div>
 <div id="nr-photo-toast" role="status"></div>
 <div id="nr-phone-overlay" role="dialog" aria-modal="true" aria-label="Neon Runner phone">
   <div id="nr-phone-device">
     <div id="nr-phone-top">
-      <div class="nr-phone-top-row"><div class="nr-phone-brand"><div class="nr-phone-app-icon">✦</div><div><div class="nr-phone-title">RUNNER PHONE</div><div class="nr-phone-sub">NEON NETWORK // CITY EDITION</div></div></div><button type="button" class="nr-phone-close" id="nr-phone-close" aria-label="Close phone">×</button></div>
-      <div id="nr-phone-status-row"><span><i id="nr-phone-status-dot" class="nr-phone-status-dot"></i><span id="nr-phone-status">LOCAL PHONE · CONNECT A RUNNER TO SHARE</span></span><button type="button" class="nr-phone-mini-btn" id="nr-phone-multiplayer">MULTIPLAYER ↗</button></div>
+      <div class="nr-phone-statusbar" aria-label="Phone status"><span id="nr-phone-clock">09:41</span><span class="nr-phone-dynamic-island" aria-hidden="true"><i></i></span><span class="nr-phone-status-icons"><span>▮▮▮</span><span>5G</span><span class="nr-phone-battery"><i></i></span></span></div>
+      <div class="nr-phone-top-row"><div class="nr-phone-brand"><div class="nr-phone-app-icon">✦</div><div><div class="nr-phone-title">NEXUS MOBILE</div><div class="nr-phone-sub">NEON RUNNER · CITY NETWORK</div></div></div><button type="button" class="nr-phone-close" id="nr-phone-close" aria-label="Close phone">×</button></div>
+      <div id="nr-phone-status-row"><span class="nr-phone-status-label"><i id="nr-phone-status-dot" class="nr-phone-status-dot"></i><span id="nr-phone-status">LOCAL PHONE · CONNECT A RUNNER TO SHARE</span></span><button type="button" class="nr-phone-mini-btn" id="nr-phone-multiplayer">CONNECT ↗</button></div>
     </div>
-    <nav id="nr-phone-tabs" aria-label="Phone apps">
-      <button class="nr-phone-tab active" data-nr-phone-tab="quests"><span class="nr-phone-tab-icon">📸</span>PHOTO QUESTS</button>
-      <button class="nr-phone-tab" data-nr-phone-tab="gallery"><span class="nr-phone-tab-icon">🖼️</span>GALLERY</button>
-      <button class="nr-phone-tab" data-nr-phone-tab="messages"><span class="nr-phone-tab-icon">💬</span>MESSAGES</button>
-      <button class="nr-phone-tab" data-nr-phone-tab="contacts"><span class="nr-phone-tab-icon">👥</span>CONTACTS</button>
-      <button class="nr-phone-tab" data-nr-phone-tab="npcs"><span class="nr-phone-tab-icon">🧑‍🚀</span>NPC TEXTS <span id="nr-npc-tab-count" class="nr-npc-tab-count"></span></button>
-    </nav>
+    <div id="nr-phone-appbar"><button type="button" class="nr-phone-back" data-nr-phone-tab="home" aria-label="Back to phone home">‹</button><div class="nr-phone-appbar-copy"><strong id="nr-phone-app-title">Home</strong><span id="nr-phone-app-subtitle">Your pocket companion</span></div><span class="nr-phone-appbar-live"><i></i> LIVE</span></div>
     <main id="nr-phone-content"></main>
-    <div class="nr-phone-foot">P TO TOGGLE PHONE <span style="color:#365b70"> · </span> F TO SNAP AT A GLOWING CAMERA MARKER</div>
+    <nav id="nr-phone-tabs" aria-label="Phone apps">
+      <button class="nr-phone-tab active" data-nr-phone-tab="home"><span class="nr-phone-tab-icon">⌂</span><span>Home</span></button>
+      <button class="nr-phone-tab" data-nr-phone-tab="quests"><span class="nr-phone-tab-icon">📸</span><span>Photos</span></button>
+      <button class="nr-phone-tab" data-nr-phone-tab="gallery"><span class="nr-phone-tab-icon">▧</span><span>Gallery</span></button>
+      <button class="nr-phone-tab" data-nr-phone-tab="messages"><span class="nr-phone-tab-icon">✉</span><span>Chat</span></button>
+      <button class="nr-phone-tab" data-nr-phone-tab="contacts"><span class="nr-phone-tab-icon">♙</span><span>People</span></button>
+      <button class="nr-phone-tab" data-nr-phone-tab="npcs"><span class="nr-phone-tab-icon">✦</span><span>NPCs <i id="nr-npc-tab-count" class="nr-npc-tab-count"></i></span></button>
+      <button class="nr-phone-tab" data-nr-phone-tab="map"><span class="nr-phone-tab-icon">⌖</span><span>Map</span></button>
+    </nav>
+    <div class="nr-phone-foot"><span class="nr-phone-home-indicator"></span><span class="nr-phone-foot-copy">PRESS P TO PUT YOUR PHONE AWAY</span></div>
   </div>
 </div>
 <script id="neon-photo-quests-phone-system">
@@ -10143,8 +10210,12 @@
   ];
   const ICONS = ['📷','🌆','🌉','🏙️','💜','🌌','🧭','🏢','🛰️','🌇','🪟','🌃','⬆️','⬇️','➡️','⬅️','☁️','🧱','🔷','🌙','🛣️','🗺️','✨','🌅','🏆'];
   let phoneOpen = false;
-  let activeTab = 'quests';
+  let activeTab = 'home';
   let activeQuestId = 'photo-01';
+  let mapFilter = 'all';
+  let mapBoundsCache = null;
+  let areaTargetsCache = null;
+  let lastMapLiveUpdate = 0;
   let quests = [];
   let questMarkers = [];
   let nearQuestId = null;
@@ -10171,8 +10242,8 @@
   function readStore() {
     try {
       const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-      return { completed: Array.isArray(raw.completed) ? raw.completed.filter(x => typeof x === 'string') : [], photos: Array.isArray(raw.photos) ? raw.photos.filter(isSafePhoto).slice(-18) : [], chats: raw.chats && typeof raw.chats === 'object' ? raw.chats : { friend: [], notes: [] }, lastName: typeof raw.lastName === 'string' ? raw.lastName : 'Runner', npcSeen: Array.isArray(raw.npcSeen) ? raw.npcSeen.filter(x => typeof x === 'string') : [], npcThreads: raw.npcThreads && typeof raw.npcThreads === 'object' ? raw.npcThreads : {}, npcReadAt: raw.npcReadAt && typeof raw.npcReadAt === 'object' ? raw.npcReadAt : {}, npcBaseline: raw.npcBaseline && typeof raw.npcBaseline === 'object' ? raw.npcBaseline : {}, npcCompleted: Array.isArray(raw.npcCompleted) ? raw.npcCompleted.filter(x => typeof x === 'string') : [], npcRep: Number.isFinite(Number(raw.npcRep)) ? Math.max(0, Number(raw.npcRep)) : 0, npcRaceFinishes: Number.isFinite(Number(raw.npcRaceFinishes)) ? Math.max(0, Number(raw.npcRaceFinishes)) : 0 };
-    } catch (_) { return { completed: [], photos: [], chats: { friend: [], notes: [] }, lastName: 'Runner', npcSeen: [], npcThreads: {}, npcReadAt: {}, npcBaseline: {}, npcCompleted: [], npcRep: 0, npcRaceFinishes: 0 }; }
+      return { completed: Array.isArray(raw.completed) ? raw.completed.filter(x => typeof x === 'string') : [], photos: Array.isArray(raw.photos) ? raw.photos.filter(isSafePhoto).slice(-18) : [], chats: raw.chats && typeof raw.chats === 'object' ? raw.chats : { friend: [], notes: [] }, lastName: typeof raw.lastName === 'string' ? raw.lastName : 'Runner', npcSeen: Array.isArray(raw.npcSeen) ? raw.npcSeen.filter(x => typeof x === 'string') : [], npcThreads: raw.npcThreads && typeof raw.npcThreads === 'object' ? raw.npcThreads : {}, npcReadAt: raw.npcReadAt && typeof raw.npcReadAt === 'object' ? raw.npcReadAt : {}, npcBaseline: raw.npcBaseline && typeof raw.npcBaseline === 'object' ? raw.npcBaseline : {}, npcCompleted: Array.isArray(raw.npcCompleted) ? raw.npcCompleted.filter(x => typeof x === 'string') : [], npcRep: Number.isFinite(Number(raw.npcRep)) ? Math.max(0, Number(raw.npcRep)) : 0, npcRaceFinishes: Number.isFinite(Number(raw.npcRaceFinishes)) ? Math.max(0, Number(raw.npcRaceFinishes)) : 0, waypoint: raw.waypoint && ['npc','quest','area'].includes(raw.waypoint.type) && typeof raw.waypoint.id === 'string' ? { type: raw.waypoint.type, id: raw.waypoint.id } : null };
+    } catch (_) { return { completed: [], photos: [], chats: { friend: [], notes: [] }, lastName: 'Runner', npcSeen: [], npcThreads: {}, npcReadAt: {}, npcBaseline: {}, npcCompleted: [], npcRep: 0, npcRaceFinishes: 0, waypoint: null }; }
   }
   function isSafePhoto(p) { return p && typeof p === 'object' && typeof p.image === 'string' && p.image.startsWith('data:image/jpeg;base64,') && p.image.length < 150000 && typeof p.title === 'string'; }
   function saveStore() {
@@ -10394,6 +10465,8 @@
   }
 
   function setupQuests() {
+    mapBoundsCache = null; areaTargetsCache = null;
+    disposeWaypointBeacon();
     if (typeof scene==='undefined' || typeof THREE==='undefined' || !Array.isArray(buildingPositions) || !buildingPositions.length) return;
     clearWorldMarkers();
     clearNpcMarkers();
@@ -10415,11 +10488,224 @@
   function selectQuest(id) {
     const q=quests.find(v=>v.id===id); if(!q)return;
     if(store.completed.includes(id)){toast('THIS PHOTO IS ALREADY IN YOUR COLLECTION');return;}
-    activeQuestId=id; questMarkers.forEach(m=>{const q2=quests.find(v=>v.id===m.id);if(q2)refreshMarker(q2);});
-    renderPhone(); renderHud(true); toast('PINNED: '+q.title.toUpperCase()+' · FOLLOW THE GLOWING CAMERA');
+    activeQuestId=id;store.waypoint={type:'quest',id:q.id};saveStore();questMarkers.forEach(m=>{const q2=quests.find(v=>v.id===m.id);if(q2)refreshMarker(q2);});
+    renderPhone(); renderHud(true);updateWaypointHud(); toast('PINNED: '+q.title.toUpperCase()+' · FOLLOW THE GLOWING CAMERA');
   }
   function horizontalDistance(q) { return Math.hypot(player.position.x-q.x,player.position.z-q.z); }
   function canCapture(q) { return horizontalDistance(q)<23 && Math.abs(player.position.y-q.y)<24; }
+
+  // Cache map bounds and generated district points for a stable top-down city map.
+  function getMapBounds() {
+    if (mapBoundsCache) return mapBoundsCache;
+    const raw = Array.isArray(buildingPositions) ? buildingPositions.filter(b => b && Number.isFinite(b.x) && Number.isFinite(b.z)) : [];
+    const xs = raw.map(b => b.x).concat([0]), zs = raw.map(b => b.z).concat([0]);
+    let minX = Math.min(...xs), maxX = Math.max(...xs), minZ = Math.min(...zs), maxZ = Math.max(...zs);
+    if (!Number.isFinite(minX) || maxX-minX < 100) { minX=-500; maxX=500; }
+    if (!Number.isFinite(minZ) || maxZ-minZ < 100) { minZ=-500; maxZ=500; }
+    const padX = (maxX-minX)*.045, padZ = (maxZ-minZ)*.045;
+    mapBoundsCache = { minX:minX-padX, maxX:maxX+padX, minZ:minZ-padZ, maxZ:maxZ+padZ };
+    return mapBoundsCache;
+  }
+  function projectWorld(pos) {
+    const b = getMapBounds();
+    const nx = ((Number(pos?.x)||0) - b.minX) / (b.maxX-b.minX || 1);
+    const nz = ((Number(pos?.z)||0) - b.minZ) / (b.maxZ-b.minZ || 1);
+    return { x: Math.max(3.5, Math.min(96.5, 3.5 + nx*93)), y: Math.max(3.5, Math.min(96.5, 3.5 + nz*93)) };
+  }
+  function getAreaTargets() {
+    if (areaTargetsCache) return areaTargetsCache;
+    const raw = Array.isArray(buildingPositions) ? buildingPositions.filter(b => b && Number.isFinite(b.x) && Number.isFinite(b.y) && Number.isFinite(b.z) && Math.hypot(b.x,b.z)>32) : [];
+    const maxRadius = (typeof CHROMEBOOK_MODE !== 'undefined' && CHROMEBOOK_MODE) ? 500 : 880;
+    const radius = maxRadius * .59;
+    const used = [];
+    const areas = [{id:'center',name:'City Center',detail:'Spawn plaza · central landmark',icon:'🏙️',x:0,y:typeof SPAWN_Y==='number'?SPAWN_Y:150,z:0,color:'#8ddfff'}];
+    const directions = [
+      {id:'north',name:'North Neon',detail:'Northern rooftop district',icon:'⬆',angle:-Math.PI/2,color:'#5ad9ff'},
+      {id:'east',name:'Eastline District',detail:'Eastern skyline area',icon:'➡',angle:0,color:'#aa8bff'},
+      {id:'south',name:'South Rooftops',detail:'Southern roofline area',icon:'⬇',angle:Math.PI/2,color:'#ff78cf'},
+      {id:'west',name:'West End Glow',detail:'Western skyline area',icon:'⬅',angle:Math.PI,color:'#ffc46d'}
+    ];
+    directions.forEach(dir=>{
+      const tx=Math.cos(dir.angle)*radius,tz=Math.sin(dir.angle)*radius;
+      let best=null,bestScore=Infinity;
+      raw.forEach(b=>{if(used.some(u=>Math.hypot(u.x-b.x,u.z-b.z)<70))return;const score=(b.x-tx)**2+(b.z-tz)**2;if(score<bestScore){bestScore=score;best=b;}});
+      if(best){used.push(best);areas.push({id:dir.id,name:dir.name,detail:dir.detail,icon:dir.icon,x:best.x,y:best.y,z:best.z,color:dir.color});}
+      else areas.push({id:dir.id,name:dir.name,detail:dir.detail,icon:dir.icon,x:tx,y:typeof SPAWN_Y==='number'?SPAWN_Y:150,z:tz,color:dir.color});
+    });
+    areaTargetsCache=areas;
+    return areas;
+  }
+  function getMapTargets(filter = 'all') {
+    const targets=[];
+    if (filter==='all'||filter==='areas') getAreaTargets().forEach(a=>targets.push({...a,type:'area'}));
+    if (filter==='all'||filter==='photos') quests.forEach(q=>targets.push({type:'quest',id:q.id,name:q.title,detail:store.completed.includes(q.id)?'Photo captured':'Photo quest · '+String(q.index).padStart(2,'0'),icon:q.icon,x:q.x,y:q.y,z:q.z,color:store.completed.includes(q.id)?'#55efb2':'#55dcff',done:store.completed.includes(q.id)}));
+    if (filter==='all'||filter==='people') npcMarkers.forEach(m=>{const seen=store.npcSeen.includes(m.id),done=store.npcCompleted.includes(m.id);targets.push({type:'npc',id:m.id,name:seen?m.npc.name:'Unknown Runner '+String(NPC_DEFS.findIndex(n=>n.id===m.id)+1).padStart(2,'0'),detail:done?'NPC quest complete':seen?m.npc.role:'Unmet city runner',icon:seen?m.npc.icon:'❔',x:m.x,y:m.y,z:m.z,color:'#'+Number(m.npc.color).toString(16).padStart(6,'0'),seen,done});});
+    return targets;
+  }
+  function getWaypointTarget() {
+    const wp=store.waypoint;if(!wp)return null;
+    if(wp.type==='quest'){const q=quests.find(v=>v.id===wp.id);return q?{...q,type:'quest',name:q.title,icon:q.icon,color:'#55dcff'}:null;}
+    if(wp.type==='npc'){const m=npcMarkers.find(v=>v.id===wp.id);if(!m)return null;const seen=store.npcSeen.includes(m.id);return {type:'npc',id:m.id,name:seen?m.npc.name:'Unknown Runner',detail:m.npc.role,icon:seen?m.npc.icon:'❔',x:m.x,y:m.y,z:m.z,color:'#'+Number(m.npc.color).toString(16).padStart(6,'0')};}
+    if(wp.type==='area')return getAreaTargets().find(a=>a.id===wp.id)||null;
+    return null;
+  }
+  let waypointBeacon = null;
+  let waypointBeaconKey = '';
+
+  function disposeWaypointBeacon() {
+    if (!waypointBeacon) { waypointBeaconKey = ''; return; }
+    if (typeof scene !== 'undefined' && scene) scene.remove(waypointBeacon);
+    waypointBeacon.traverse?.(node => {
+      if (node.geometry) node.geometry.dispose?.();
+      if (node.material) {
+        const materials = Array.isArray(node.material) ? node.material : [node.material];
+        materials.forEach(material => { material.map?.dispose?.(); material.dispose?.(); });
+      }
+    });
+    waypointBeacon = null;
+    waypointBeaconKey = '';
+  }
+
+  function waypointLabelTexture(target, color) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 640; canvas.height = 144;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'rgba(2,12,25,.94)';
+    if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(6, 6, 628, 132, 25); ctx.fill(); }
+    else { ctx.fillRect(6, 6, 628, 132); }
+    ctx.strokeStyle = color; ctx.lineWidth = 5; ctx.strokeRect(8, 8, 624, 128);
+    ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+    ctx.font = 'bold 58px sans-serif'; ctx.fillStyle = color;
+    ctx.fillText(String(target.icon || '⌖'), 28, 72);
+    ctx.font = '900 31px monospace'; ctx.fillStyle = '#f0fcff';
+    let name = String(target.name || 'WAYPOINT').toUpperCase();
+    while (ctx.measureText(name).width > 470 && name.length > 8) name = name.slice(0, -1);
+    ctx.fillText(name, 118, 62);
+    ctx.font = '900 17px monospace'; ctx.fillStyle = '#9ee9f0';
+    ctx.fillText('DESTINATION // FOLLOW THE BEACON', 120, 103);
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  function ensureWaypointBeacon(target) {
+    if (!target || typeof THREE === 'undefined' || typeof scene === 'undefined' || !scene) {
+      disposeWaypointBeacon(); return;
+    }
+    const active = store.waypoint;
+    const key = [active?.type || '', active?.id || '', target.name || '', target.color || ''].join(':');
+    if (waypointBeacon && waypointBeaconKey === key) return;
+    disposeWaypointBeacon();
+    let tint;
+    try { tint = new THREE.Color(target.color || '#55dcff'); } catch (_) { tint = new THREE.Color(0x55dcff); }
+    const group = new THREE.Group();
+    group.name = 'Active Waypoint Beacon';
+    group.renderOrder = 900;
+
+    // Large rooftop locator: a ground ring, rising neon beam, and floating nameplate.
+    const ringMat = new THREE.MeshBasicMaterial({ color: tint, transparent: true, opacity: .92, depthTest: false, depthWrite: false, side: THREE.DoubleSide });
+    const ring2Mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .72, depthTest: false, depthWrite: false, side: THREE.DoubleSide });
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(6.2, .28, 8, 48), ringMat);
+    ring.rotation.x = Math.PI / 2; ring.position.y = .7; ring.renderOrder = 901; group.add(ring);
+    const inner = new THREE.Mesh(new THREE.TorusGeometry(3.5, .13, 8, 36), ring2Mat);
+    inner.rotation.x = Math.PI / 2; inner.position.y = 1.0; inner.renderOrder = 902; group.add(inner);
+
+    const beamMaterial = new THREE.MeshBasicMaterial({ color: tint, transparent: true, opacity: .19, depthTest: false, depthWrite: false, side: THREE.DoubleSide });
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(.22, 2.0, 76, 12, 1, true), beamMaterial);
+    beam.position.y = 39; beam.renderOrder = 898; group.add(beam);
+    const coreMaterial = new THREE.MeshBasicMaterial({ color: tint, transparent: true, opacity: .50, depthTest: false, depthWrite: false });
+    const core = new THREE.Mesh(new THREE.CylinderGeometry(.12, .42, 76, 8, 1, true), coreMaterial);
+    core.position.y = 39; core.renderOrder = 899; group.add(core);
+
+    const arrowMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .95, depthTest: false, depthWrite: false });
+    const arrow = new THREE.Mesh(new THREE.OctahedronGeometry(2.1, 0), arrowMaterial);
+    arrow.position.y = 12; arrow.renderOrder = 903; group.add(arrow);
+
+    const texture = waypointLabelTexture(target, '#' + tint.getHexString());
+    const labelMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false, depthWrite: false, opacity: .98 });
+    const label = new THREE.Sprite(labelMaterial);
+    label.scale.set(46, 10.35, 1); label.position.y = 69; label.renderOrder = 1000; group.add(label);
+
+    group.userData.waypointParts = { ring, inner, beam, core, arrow, label, phase: 0 };
+    group.position.set(Number(target.x) || 0, (Number(target.y) || 0) + .45, Number(target.z) || 0);
+    scene.add(group);
+    waypointBeacon = group;
+    waypointBeaconKey = key;
+  }
+
+  function updateWaypointBeacon(dt) {
+    const target = getWaypointTarget();
+    if (!GAME_STARTED || !target || typeof scene === 'undefined' || typeof THREE === 'undefined') {
+      if (waypointBeacon) disposeWaypointBeacon();
+      return;
+    }
+    ensureWaypointBeacon(target);
+    if (!waypointBeacon) return;
+    waypointBeacon.position.set(Number(target.x) || 0, (Number(target.y) || 0) + .45, Number(target.z) || 0);
+    const parts = waypointBeacon.userData.waypointParts;
+    if (!parts) return;
+    parts.phase += Math.max(0, Math.min(.05, Number(dt) || 0));
+    const pulse = .94 + Math.sin(parts.phase * 3.6) * .08;
+    parts.ring.scale.setScalar(pulse);
+    parts.inner.scale.setScalar(1 + Math.sin(parts.phase * 2.8) * .12);
+    parts.arrow.position.y = 12 + Math.sin(parts.phase * 2.1) * 2.2;
+    parts.arrow.rotation.y += (Number(dt) || 0) * 1.8;
+    parts.label.position.y = 69 + Math.sin(parts.phase * 1.6) * 1.2;
+  }
+
+  function clearWaypoint(silent=false) {
+    store.waypoint=null;saveStore();disposeWaypointBeacon();updateWaypointHud();
+    if(phoneOpen&&activeTab==='map')renderPhone();
+    if(!silent)toast('WAYPOINT CLEARED');
+  }
+  function setWaypoint(type,id) {
+    const target=getMapTargets('all').find(t=>t.type===type&&t.id===id);
+    if(!target){toast('LOCATION IS NOT AVAILABLE YET · START OR RESET THE CITY');return;}
+    store.waypoint={type,id};
+    if(type==='quest'&&!store.completed.includes(id)){
+      activeQuestId=id;questMarkers.forEach(m=>{const q=quests.find(v=>v.id===m.id);if(q)refreshMarker(q);});
+    }
+    saveStore();updateWaypointHud();
+    if(phoneOpen&&activeTab==='map')renderPhone();
+    if(type==='quest')renderHud(true);
+    toast('WAYPOINT SET · '+target.name.toUpperCase()+' · FOLLOW THE ARROW',2600);
+  }
+  function directionLabel(dx,dz) {
+    const deg=(Math.atan2(dx,-dz)*180/Math.PI+360)%360;
+    return ['N','NE','E','SE','S','SW','W','NW'][Math.round(deg/45)%8];
+  }
+  function updateWaypointHud() {
+    const hud=$('nr-waypoint-hud');if(!hud)return;
+    const target=getWaypointTarget();
+    if(!target||!GAME_STARTED||typeof player==='undefined'||!player.position){hud.style.display='none';return;}
+    const dx=target.x-player.position.x,dz=target.z-player.position.z,dist=Math.hypot(dx,dz);
+    hud.style.display=phoneOpen?'none':'flex';
+    const raceHud=$('nr-race-hud');hud.style.top=(raceHud&&getComputedStyle(raceHud).display!=='none')?'145px':'18px';
+    $('nr-waypoint-title').textContent=target.name||'Waypoint';
+    $('nr-waypoint-distance').textContent=dist<18?'YOU ARE HERE · '+Math.round(dist)+' UNITS':Math.round(dist)+' UNITS AWAY · '+directionLabel(dx,dz);
+    const worldBearing = Math.atan2(dx, -dz);
+    const facing = (typeof player.yaw === 'number' && Number.isFinite(player.yaw)) ? player.yaw : 0;
+    const relativeBearing = worldBearing - facing;
+    $('nr-waypoint-arrow').style.transform='rotate('+((relativeBearing*180/Math.PI)||0)+'deg)';
+  }
+  function cityMapMarkup() {
+    const targets=getMapTargets(mapFilter),pos=(typeof player!=='undefined'&&player?.position)?projectWorld(player.position):projectWorld({x:0,z:0}),center=projectWorld({x:0,z:0});
+    const waypoint=getWaypointTarget();
+    const waypointText=waypoint?'<div class="nr-map-waypoint-card"><div class="nr-map-waypoint-icon">'+waypoint.icon+'</div><div class="nr-map-waypoint-copy"><small>YOUR ACTIVE WAYPOINT</small><b>'+esc(waypoint.name)+'</b><span id="nr-map-live-distance">Follow the glowing arrow in the city.</span></div><button type="button" class="nr-map-clear" data-nr-waypoint-clear>CLEAR</button></div>':'<div class="nr-map-waypoint-card"><div class="nr-map-waypoint-icon">⌖</div><div class="nr-map-waypoint-copy"><small>NO ROUTE SELECTED</small><b>Choose a person or place</b><span>Tap a marker on the map or select a location below.</span></div></div>';
+    const pins=targets.map(t=>{const p=projectWorld(t),active=!!store.waypoint&&store.waypoint.type===t.type&&store.waypoint.id===t.id;const pin=t.type==='npc'?'people':t.type==='quest'?'quest':'area';return '<button type="button" title="'+esc(t.name)+'" aria-label="Set waypoint to '+esc(t.name)+'" class="nr-map-pin '+pin+(active?' active':'')+'" data-nr-map-target="'+t.type+':'+t.id+'" style="left:'+p.x+'%;top:'+p.y+'%;--map-pin:'+esc(t.color||'#65e9dc')+'"><span>'+esc(t.icon||'⌖')+'</span><span class="nr-map-pin-label">'+esc(t.name)+'</span></button>';}).join('');
+    const rows=targets.map(t=>{const active=!!store.waypoint&&store.waypoint.type===t.type&&store.waypoint.id===t.id;return '<button type="button" class="nr-map-target-card '+(active?'active':'')+'" data-nr-map-target="'+t.type+':'+t.id+'" style="--map-pin:'+esc(t.color||'#65e9dc')+'"><span class="nr-map-target-icon">'+esc(t.icon||'⌖')+'</span><span class="nr-map-target-copy"><b>'+esc(t.name)+'</b><small>'+esc(t.detail||'City location')+'</small></span><span class="nr-map-target-pin">'+(active?'PINNED ✓':'GO ↗')+'</span></button>';}).join('');
+    return '<section class="nr-map-screen"><div class="nr-map-heading"><div><div class="nr-map-eyebrow">NEON DISTRICT · GPS</div><h2>City Map</h2><p>Tap any marker to set a waypoint.</p></div><span class="nr-map-live-pill"><i></i> LIVE MAP</span></div>'+waypointText+'<div class="nr-city-map" id="nr-city-map"><span class="nr-map-district north">NORTH NEON</span><span class="nr-map-district east">EASTLINE</span><span class="nr-map-district south">SOUTH ROOFTOPS</span><span class="nr-map-district west">WEST END</span><svg class="nr-map-route-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><line id="nr-map-route-line" class="nr-map-route-line" x1="'+pos.x+'" y1="'+pos.y+'" x2="'+(waypoint?projectWorld(waypoint).x:pos.x)+'" y2="'+(waypoint?projectWorld(waypoint).y:pos.y)+'" style="'+(waypoint?'display:block':'display:none')+'"/></svg><div class="nr-map-spawn" title="City Center" style="left:'+center.x+'%;top:'+center.y+'%"></div>'+pins+'<div id="nr-map-player" style="left:'+pos.x+'%;top:'+pos.y+'%"><span class="nr-map-player-label">YOU</span></div></div><div class="nr-map-legend"><span><i style="--legend:#65f1da"></i>YOU</span><span><i style="--legend:#55dcff"></i>PHOTO QUEST</span><span><i style="--legend:#c889ff"></i>NPC</span><span><i style="--legend:#ffc46d"></i>AREA</span></div><div class="nr-map-filters">'+[['all','ALL'],['people','NPCS'],['areas','AREAS'],['photos','PHOTOS']].map(f=>'<button type="button" class="nr-map-filter '+(mapFilter===f[0]?'active':'')+'" data-nr-map-filter="'+f[0]+'">'+f[1]+'</button>').join('')+'</div><div class="nr-map-small-title">'+(targets.length?'LOCATIONS · '+targets.length:'NO MAP MARKERS')+'</div><div class="nr-map-list">'+(rows||'<div class="nr-map-none">Start the city to generate map markers.</div>')+'</div></section>';
+  }
+  function updateMapLive() {
+    if(!phoneOpen||activeTab!=='map')return;
+    const map=$('nr-city-map');if(!map)return;
+    const now=performance.now();if(now-lastMapLiveUpdate<100)return;lastMapLiveUpdate=now;
+    const p=(typeof player!=='undefined'&&player?.position)?projectWorld(player.position):projectWorld({x:0,z:0});
+    const you=$('nr-map-player');if(you){you.style.left=p.x+'%';you.style.top=p.y+'%';}
+    const target=getWaypointTarget(),line=$('nr-map-route-line');
+    if(line){if(target){const q=projectWorld(target);line.setAttribute('x1',p.x);line.setAttribute('y1',p.y);line.setAttribute('x2',q.x);line.setAttribute('y2',q.y);line.style.display='block';}else line.style.display='none';}
+    const dist=$('nr-map-live-distance');
+    if(dist){if(target&&player?.position){const dx=target.x-player.position.x,dz=target.z-player.position.z;dist.textContent=Math.round(Math.hypot(dx,dz))+' units away · heading '+directionLabel(dx,dz);}else dist.textContent='Set a destination from the map.';}
+  }
   function makeFallbackPhoto(q) {
     const c=document.createElement('canvas');c.width=420;c.height=236;const x=c.getContext('2d');
     const g=x.createLinearGradient(0,0,0,236);g.addColorStop(0,'#111a3b');g.addColorStop(.65,'#102a3d');g.addColorStop(1,'#090d1c');x.fillStyle=g;x.fillRect(0,0,420,236);
@@ -10496,16 +10782,57 @@
   function contactsMarkup() {
     const st=peerStatus();return '<div class="nr-phone-section-kicker">YOUR RUNNER NETWORK</div><div class="nr-phone-contact-row"><div class="nr-phone-contact-avatar">'+(st.connected?'🟢':'👤')+'</div><div class="nr-phone-contact-info"><b>'+(st.connected?esc(st.peerName||'Connected Runner'):'No runner connected')+'</b><span>'+(st.connected?'Live peer connection · messages and photo sends enabled':'Open Multiplayer to connect with another player. The phone cannot deliver to an offline friend.')+'</span></div><button class="'+(st.connected?'nr-phone-primary':'nr-phone-secondary')+'" data-nr-contact-chat="friend">CHAT</button></div><div class="nr-phone-contact-row"><div class="nr-phone-contact-avatar">📝</div><div class="nr-phone-contact-info"><b>Local Notes</b><span>Private messages and reminders saved in this browser.</span></div><button class="nr-phone-secondary" data-nr-contact-chat="notes">OPEN</button></div><section class="nr-phone-panel"><div class="nr-phone-section-kicker">ADD A FRIEND</div><h3>Connect through Multiplayer</h3><p>Open the Multiplayer panel, join the same room as your friend, and return here. Once connected, messages and photo quest screenshots transfer directly between your browsers.</p><div class="nr-phone-buttons"><button class="nr-phone-primary" data-nr-open-mp>OPEN MULTIPLAYER ↗</button></div></section><section class="nr-phone-panel"><div class="nr-phone-section-kicker">SHARE OUTSIDE THE GAME</div><h3>Photo sharing</h3><p>Gallery photos can also be exported as image files for sharing in other apps. A live runner connection is only needed for sharing inside this game.</p><div class="nr-phone-buttons"><button class="nr-phone-secondary" data-nr-tab-to="gallery">OPEN CAMERA ROLL</button></div></section>';
   }
+  const PHONE_APP_INFO = {
+    home: ['Home', 'Your pocket companion'],
+    quests: ['Photo Quests', 'Explore the skyline'],
+    gallery: ['Gallery', 'Your captured moments'],
+    messages: ['Messages', 'Stay in touch'],
+    contacts: ['Contacts', 'Your runner network'],
+     npcs: ['NPC Messages', 'People you meet in the city'],
+     map: ['City Map', 'Waypoint navigation']
+  };
+  function homeMarkup() {
+    ensureNpcStore();
+    const captured=store.completed.length, total=25, unseen= npcUnreadCount();
+    const unreadNpc=unseen ? '<span class="nr-app-badge">'+unseen+'</span>' : '';
+    const apps=[
+      {id:'quests',icon:'📸',name:'Photo Quests',desc:'Explore & capture',cls:'photo',badge:captured?captured+'/25':''},
+      {id:'gallery',icon:'▧',name:'Gallery',desc:'Your best shots',cls:'gallery',badge:store.photos.length||''},
+      {id:'messages',icon:'✉',name:'Messages',desc:'Chat with a runner',cls:'messages',badge:''},
+      {id:'contacts',icon:'♙',name:'Contacts',desc:'Your city network',cls:'contacts',badge:''},
+      {id:'npcs',icon:'✦',name:'NPC Messages',desc:'Personal quests & texts',cls:'npcs',badge:unseen?String(unseen):''},
+      {id:'map',icon:'⌖',name:'City Map',desc:'NPCs & waypoints',cls:'map',badge:store.waypoint?'PINNED':''}
+    ];
+    const rep=Number(store.npcRep)||0;
+    return '<section class="nr-home-screen">'+
+      '<div class="nr-home-greeting"><div class="nr-home-eyebrow"><span class="nr-home-dot"></span> NEON DISTRICT <span>·</span> MOBILE NETWORK</div><h2>Hey, Runner<span>.</span></h2><p>Your city. Your stories. Your next big run.</p></div>'+
+      '<section class="nr-home-widget"><div class="nr-home-widget-top"><div><span class="nr-home-widget-kicker">RUNNER PROFILE</span><h3>'+esc(localName())+'</h3></div><div class="nr-home-avatar">✦</div></div><div class="nr-home-stats"><div><strong>'+captured+'<small>/'+total+'</small></strong><span>PHOTOS</span></div><div><strong>'+store.npcSeen.length+'<small>/'+NPC_DEFS.length+'</small></strong><span>CONTACTS MET</span></div><div><strong>'+rep+'</strong><span>RUNNER REP</span></div></div><div class="nr-home-progress"><span style="width:'+Math.min(100,captured/total*100)+'%"></span></div><div class="nr-home-widget-foot"><span>PHOTO COLLECTION</span><b>'+Math.round(captured/total*100)+'% COMPLETE</b></div></section>'+
+      '<div class="nr-home-section-head"><div><span>INSTALLED</span><h3>Your apps</h3></div><small>6 APPS</small></div>'+
+      '<div class="nr-home-app-grid">'+apps.map(a=>'<button type="button" class="nr-home-app" data-nr-launch-app="'+a.id+'"><span class="nr-home-app-icon app-'+a.cls+'">'+a.icon+(a.id==='npcs'&&a.badge?'<i class="nr-app-badge">'+a.badge+'</i>':'')+'</span><strong>'+a.name+'</strong><small>'+a.desc+'</small>'+(a.id==='quests'&&a.badge?'<em>'+captured+' captured</em>':'')+'</button>').join('')+'</div>'+
+      '<button type="button" class="nr-home-connect" data-nr-open-mp><span class="nr-home-connect-icon">⌁</span><span><strong>Connect with a friend</strong><small>Join a multiplayer room to share texts and photos.</small></span><span class="nr-home-arrow">↗</span></button>'+
+      '<div class="nr-home-caption">MADE FOR THE MOVEMENT <span>✦</span></div></section>';
+  }
+  function updatePhoneAppHeader() {
+    const info=PHONE_APP_INFO[activeTab]||PHONE_APP_INFO.home;
+    const title=$('nr-phone-app-title'), sub=$('nr-phone-app-subtitle');
+    if(title)title.textContent=info[0]; if(sub)sub.textContent=info[1];
+    const back=document.querySelector('.nr-phone-back'); if(back){back.style.opacity=activeTab==='home'?'.25':'1';back.style.pointerEvents=activeTab==='home'?'none':'auto';}
+    const clock=$('nr-phone-clock');if(clock)clock.textContent=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  }
   function renderPhone() {
-    const host=$('nr-phone-content'); if(!host)return;updatePhoneStatus();
+    const host=$('nr-phone-content'); if(!host)return;updatePhoneStatus();updatePhoneAppHeader();
     document.querySelectorAll('[data-nr-phone-tab]').forEach(b=>b.classList.toggle('active',b.dataset.nrPhoneTab===activeTab));
-    if(activeTab==='quests')host.innerHTML=questsMarkup();
+    if(activeTab==='home')host.innerHTML=homeMarkup();
+    else if(activeTab==='quests')host.innerHTML=questsMarkup();
     else if(activeTab==='gallery')host.innerHTML=galleryMarkup();
     else if(activeTab==='messages')host.innerHTML=messagesMarkup();
     else if(activeTab==='npcs')host.innerHTML=npcAppMarkup();
+    else if(activeTab==='map')host.innerHTML=cityMapMarkup();
+    else if(activeTab==='contacts')host.innerHTML=contactsMarkup();
     else host.innerHTML=contactsMarkup();
     updateNpcTabBadge();
     const log=$('nr-phone-chat-log');if(log)log.scrollTop=log.scrollHeight;
+    if(activeTab==='map')updateMapLive();
   }
   function openPhone() {
     phoneOpen=true;$('nr-phone-overlay').style.display='flex';if(document.pointerLockElement&&document.exitPointerLock)document.exitPointerLock();
@@ -10516,6 +10843,12 @@
   function closePhone() {
     phoneOpen=false;$('nr-phone-overlay').style.display='none';renderHud(true);
     if(typeof keys!=='undefined'&&keys)Object.keys(keys).forEach(k=>{if(typeof keys[k]==='boolean')keys[k]=false;});
+    if(typeof player!=='undefined'&&player.velocity&&typeof player.velocity.set==='function')player.velocity.set(0,0,0);
+    if(typeof endGrapple==='function')endGrapple();
+    // Do not reacquire pointer lock from a phone button click. The player can
+    // deliberately click the game canvas when they want mouse-look again.
+    if(document.pointerLockElement&&document.exitPointerLock)document.exitPointerLock();
+    updateWaypointHud();
   }
   function sendText(text) {
     const cleaned=String(text||'').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,'').trim().slice(0,500);if(!cleaned)return;
@@ -10565,14 +10898,19 @@
   window.__nrPhoneIsOpen=()=>phoneOpen;
 
   $('nr-phone-launcher').addEventListener('click',openPhone);
+  $('nr-waypoint-clear').addEventListener('click',()=>clearWaypoint());
   $('nr-phone-close').addEventListener('click',closePhone);
   $('nr-phone-multiplayer').addEventListener('click',()=>{closePhone();if(typeof window.openNeonMultiplayer==='function')window.openNeonMultiplayer();else toast('MULTIPLAYER IS NOT AVAILABLE IN THIS BUILD');});
   $('nr-phone-overlay').addEventListener('click',e=>{if(e.target===$('nr-phone-overlay'))closePhone();});
   document.querySelectorAll('[data-nr-phone-tab]').forEach(b=>b.addEventListener('click',()=>{activeTab=b.dataset.nrPhoneTab;renderPhone();}));
   $('nr-phone-content').addEventListener('click',e=>{
     const el=e.target.closest('button');if(!el)return;
+    if(el.dataset.nrLaunchApp){activeTab=el.dataset.nrLaunchApp;renderPhone();return;}
     if(el.dataset.nrNpcOpen){selectedNpcId=el.dataset.nrNpcOpen;const thread=store.npcThreads[selectedNpcId]||[];if(thread.length)store.npcReadAt[selectedNpcId]=Number(thread[thread.length-1].at)||Date.now();saveStore();renderPhone();return;}
-    if(el.dataset.nrNpcFind){const npc=npcById(el.dataset.nrNpcFind);toast(npc?'FIND '+npc.name.toUpperCase()+' NEAR A GLOWING RUNNER MARKER':'LOOK FOR UNKNOWN RUNNERS AROUND THE CITY',2800);return;}
+    if(el.dataset.nrNpcFind){const npc=npcById(el.dataset.nrNpcFind);if(npc)setWaypoint('npc',npc.id);else toast('LOOK FOR UNKNOWN RUNNERS AROUND THE CITY',2800);return;}
+    if(el.dataset.nrMapTarget){const parts=el.dataset.nrMapTarget.split(':');if(parts.length===2)setWaypoint(parts[0],parts[1]);return;}
+    if(el.dataset.nrMapFilter){mapFilter=el.dataset.nrMapFilter;renderPhone();return;}
+    if(el.hasAttribute('data-nr-waypoint-clear')){clearWaypoint();return;}
     if(el.dataset.nrPin){selectQuest(el.dataset.nrPin);return;}
     if(el.hasAttribute('data-nr-pin-next')){const q=quests.find(v=>!store.completed.includes(v.id));if(q)selectQuest(q.id);else toast('ALL PHOTO QUESTS COMPLETE');return;}
     if(el.dataset.nrViewPhoto){const p=store.photos.find(v=>v.questId===el.dataset.nrViewPhoto);if(p){activeTab='gallery';renderPhone();}else{activeTab='gallery';renderPhone();}return;}
@@ -10613,7 +10951,7 @@
       checkNpcQuestCompletions();
       renderHud(false);
     }
-    syncLauncher();updatePhoneStatus();requestAnimationFrame(tick);
+    syncLauncher();updatePhoneStatus();updateWaypointHud();updateWaypointBeacon(dt);updateMapLive();requestAnimationFrame(tick);
   }
   // Keep quest markers tied to each newly generated procedural city.
   ensureNpcStore(); renderPhone(); syncLauncher(); requestAnimationFrame(tick);

@@ -898,6 +898,8 @@
 
         window.initGame = function(mode) {
             GAME_STARTED = true;
+            // City activities (time trials and the runner phone) belong to Normal / Realistic City mode.
+            window.NEON_NORMAL_MODE = (mode === 'standard');
             
             // Apply Chromebook Settings
             if (CHROMEBOOK_MODE) {
@@ -9654,7 +9656,7 @@
   function menuIsVisible() { return $('nr-race-menu').style.display === 'flex'; }
   function resultsAreVisible() { return $('nr-race-results').style.display === 'flex'; }
   function syncLauncher() {
-    const playing = typeof GAME_STARTED !== 'undefined' && GAME_STARTED;
+    const playing = typeof GAME_STARTED !== 'undefined' && GAME_STARTED && window.NEON_NORMAL_MODE === true;
     $('nr-race-launcher').style.display = playing && !menuIsVisible() && !resultsAreVisible() ? 'block' : 'none';
   }
   function renderRaceOptions() {
@@ -9988,6 +9990,7 @@
       };
       writeRecords();
     }
+    window.dispatchEvent(new CustomEvent('neonrunner:race-finished',{detail:{id:r.id,time:Math.round(elapsed)}}));
     $('nr-race-hud').style.display = 'none';
     $('nr-race-countdown').style.display = 'none';
     $('nr-race-result-time').textContent = formatTime(elapsed);
@@ -10076,18 +10079,7 @@
     if (event.key === 'Escape' && menuIsVisible()) { showPanel('nr-race-menu', false); syncLauncher(); }
     if (event.key === 'Escape' && resultsAreVisible()) { showPanel('nr-race-results', false); activeRace = null; clearRaceWorld(); syncLauncher(); }
   });
-  // Add the race door to the existing main menu without disturbing the other game modes.
-  const mainMenu = $('main-menu');
-  if (mainMenu && !mainMenu.querySelector('[data-open-city-races]')) {
-    const button = document.createElement('button');
-    button.type = 'button'; button.className = 'menu-btn'; button.dataset.openCityRaces = 'true';
-    button.textContent = 'CITY RACES // BEAT YOUR GHOST';
-    button.style.borderColor = '#67f5d4'; button.style.color = '#9dffe9'; button.style.boxShadow = '0 0 18px rgba(65,255,218,.12)';
-    button.addEventListener('click', openCityRaceMenu);
-    const customizer = mainMenu.querySelector('button[onclick*="openCharacterCustomizer"]');
-    if (customizer && customizer.parentNode) customizer.parentNode.insertBefore(button, customizer.nextSibling);
-    else mainMenu.appendChild(button);
-  }
+  // City Races is launched from its in-game HUD button in Normal / Realistic City mode, not the main menu.
   renderRaceOptions();
   syncLauncher();
   requestAnimationFrame(tickRace);
@@ -10106,7 +10098,7 @@
 #nr-phone-top{flex:none;padding:17px 18px 12px;border-bottom:1px solid rgba(151,199,226,.13);background:linear-gradient(100deg,rgba(16,31,49,.85),rgba(27,12,38,.7))}
 .nr-phone-top-row{display:flex;align-items:center;justify-content:space-between;gap:10px}.nr-phone-brand{display:flex;align-items:center;gap:9px}.nr-phone-app-icon{width:35px;height:35px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,113,218,.55);border-radius:10px;background:linear-gradient(135deg,rgba(255,76,204,.2),rgba(63,213,255,.14));font-size:18px;box-shadow:0 0 20px rgba(255,75,210,.1)}.nr-phone-title{font-size:15px;font-weight:950;letter-spacing:1.8px;color:#f5fbff}.nr-phone-sub{font:800 8px/1.5 ui-monospace,Consolas,monospace;letter-spacing:1.5px;color:#8daabe;margin-top:3px}.nr-phone-close{width:36px;height:36px;border:1px solid rgba(202,222,238,.19);border-radius:10px;background:rgba(255,255,255,.04);color:#e5f6ff;font-size:23px;cursor:pointer}.nr-phone-close:hover{background:rgba(255,100,210,.16)}
 #nr-phone-status-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:13px;padding:8px 10px;border:1px solid rgba(140,184,212,.13);border-radius:9px;background:rgba(0,0,0,.16);color:#91aabd;font:850 8px/1.45 ui-monospace,Consolas,monospace;letter-spacing:.8px}.nr-phone-status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ffbe7a;box-shadow:0 0 9px currentColor;margin-right:6px}.nr-phone-status-dot.online{background:#4dffd0;color:#4dffd0}.nr-phone-mini-btn{border:1px solid rgba(126,230,241,.32);border-radius:7px;background:rgba(21,95,112,.2);color:#aaf5f3;padding:6px 8px;font:900 8px ui-monospace,Consolas,monospace;cursor:pointer;white-space:nowrap}
-#nr-phone-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:10px 12px 0;flex:none}.nr-phone-tab{min-width:0;border:1px solid rgba(138,177,203,.14);border-radius:9px;padding:10px 4px;background:rgba(255,255,255,.025);color:#90aabc;font:900 8px/1.35 ui-monospace,Consolas,monospace;letter-spacing:.4px;cursor:pointer}.nr-phone-tab .nr-phone-tab-icon{display:block;margin-bottom:4px;font-size:16px}.nr-phone-tab.active{border-color:rgba(255,116,217,.6);background:linear-gradient(120deg,rgba(255,69,202,.14),rgba(78,212,255,.09));color:#ffe3fa;box-shadow:inset 0 0 0 1px rgba(255,116,217,.08)}
+#nr-phone-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;padding:10px 12px 0;flex:none}.nr-phone-tab{min-width:0;border:1px solid rgba(138,177,203,.14);border-radius:9px;padding:10px 4px;background:rgba(255,255,255,.025);color:#90aabc;font:900 8px/1.35 ui-monospace,Consolas,monospace;letter-spacing:.4px;cursor:pointer}.nr-phone-tab .nr-phone-tab-icon{display:block;margin-bottom:4px;font-size:16px}.nr-phone-tab.active{border-color:rgba(255,116,217,.6);background:linear-gradient(120deg,rgba(255,69,202,.14),rgba(78,212,255,.09));color:#ffe3fa;box-shadow:inset 0 0 0 1px rgba(255,116,217,.08)}.nr-npc-tab-count{display:inline-flex;align-items:center;justify-content:center;min-width:14px;height:14px;margin-left:2px;padding:0 3px;border-radius:8px;background:#ff5fcf;color:#1b0820;font:900 8px/1 ui-monospace,Consolas,monospace}.nr-npc-unseen{display:inline-flex;padding:3px 6px;border:1px solid rgba(99,224,255,.3);border-radius:6px;color:#9aefff;background:rgba(36,133,158,.1);font:900 7px ui-monospace,Consolas,monospace;letter-spacing:.6px}.nr-npc-card{position:relative}.nr-npc-card .nr-phone-buttons button{flex:1}.nr-npc-thread{margin-top:12px}.nr-npc-quest-line{margin-top:8px;padding:8px;border-radius:8px;background:rgba(0,0,0,.18);border:1px solid rgba(122,193,218,.12)}.nr-npc-quest-line b{display:block;font-size:9px;color:#c7faff;margin-bottom:4px}.nr-npc-quest-line span{font-size:9px;color:#92aebe;line-height:1.5}.nr-npc-reward{color:#ffcf7d!important}
 #nr-phone-content{flex:1;min-height:0;overflow:auto;padding:13px 13px 16px;overscroll-behavior:contain}#nr-phone-content::-webkit-scrollbar{width:6px}#nr-phone-content::-webkit-scrollbar-thumb{background:#294151;border-radius:8px}.nr-phone-section-kicker{margin:0 0 8px;color:#6fe8e0;font:900 9px/1.5 ui-monospace,Consolas,monospace;letter-spacing:1.5px}.nr-phone-panel{padding:12px;border:1px solid rgba(131,182,209,.15);border-radius:12px;background:linear-gradient(140deg,rgba(17,34,51,.68),rgba(10,17,32,.7));margin-bottom:10px}.nr-phone-panel h3{margin:0 0 6px;color:#f2faff;font-size:13px}.nr-phone-panel p{margin:0;color:#93adbf;font-size:10px;line-height:1.55}.nr-phone-primary,.nr-phone-secondary,.nr-phone-danger{border:1px solid rgba(105,241,220,.52);border-radius:8px;padding:9px 10px;background:linear-gradient(100deg,#0cae9d,#54cce9);color:#06151a;font:900 9px ui-monospace,Consolas,monospace;letter-spacing:.6px;cursor:pointer}.nr-phone-secondary{border-color:rgba(125,183,207,.3);background:rgba(16,43,59,.7);color:#c4e5f3}.nr-phone-danger{border-color:rgba(255,120,167,.3);background:rgba(110,30,62,.35);color:#ffc3db}.nr-phone-buttons{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.nr-phone-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.nr-phone-quest{min-width:0;padding:10px;border:1px solid rgba(130,180,206,.17);border-radius:11px;background:linear-gradient(145deg,rgba(18,36,54,.75),rgba(8,16,29,.75))}.nr-phone-quest.done{border-color:rgba(78,255,184,.4)}.nr-phone-quest.active{border-color:rgba(255,117,219,.6);box-shadow:0 0 18px rgba(255,94,214,.07)}.nr-phone-quest-art{height:54px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(116,223,238,.16);border-radius:8px;background:radial-gradient(ellipse,rgba(68,208,255,.15),transparent 70%),linear-gradient(145deg,#102334,#090f1e);font-size:25px;margin-bottom:8px}.nr-phone-quest small{display:block;margin-bottom:5px;color:#70e8df;font:900 8px/1.5 ui-monospace,Consolas,monospace;letter-spacing:.8px}.nr-phone-quest h3{margin:0 0 5px;font-size:11px;color:#edf9ff}.nr-phone-quest p{margin:0;color:#91a9bb;font-size:9px;line-height:1.5;min-height:39px}.nr-phone-quest .nr-phone-buttons button{flex:1;min-width:0;padding:8px 5px;font-size:8px}.nr-phone-progress{height:5px;margin:9px 0 12px;border-radius:9px;background:rgba(255,255,255,.08);overflow:hidden}.nr-phone-progress>div{height:100%;background:linear-gradient(90deg,#ff62d3,#56d6ff);box-shadow:0 0 12px rgba(255,100,215,.35)}.nr-phone-empty{padding:32px 15px;text-align:center;color:#93adbf;font-size:11px;line-height:1.7}.nr-phone-photo{overflow:hidden;border:1px solid rgba(129,187,211,.18);border-radius:12px;background:rgba(3,10,19,.6);margin-bottom:11px}.nr-phone-photo img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:#07101d}.nr-phone-photo-body{padding:10px}.nr-phone-photo-title{font-size:11px;font-weight:900;color:#eff9ff}.nr-phone-photo-meta{margin-top:4px;color:#7f9bad;font:800 8px/1.5 ui-monospace,Consolas,monospace;letter-spacing:.5px}.nr-phone-photo .nr-phone-buttons button{flex:1}.nr-phone-chat{display:flex;flex-direction:column;gap:8px;min-height:150px;max-height:350px;overflow:auto;padding:10px;border:1px solid rgba(116,170,196,.12);border-radius:11px;background:rgba(0,0,0,.13)}.nr-phone-bubble{max-width:87%;padding:9px 10px;border-radius:11px;border:1px solid rgba(121,172,202,.15);background:rgba(35,55,73,.65);align-self:flex-start;overflow-wrap:anywhere}.nr-phone-bubble.out{align-self:flex-end;border-color:rgba(81,229,219,.25);background:rgba(10,93,94,.27)}.nr-phone-bubble .sender{font:900 8px/1.3 ui-monospace,Consolas,monospace;color:#7fe8df;margin-bottom:4px}.nr-phone-bubble .body{white-space:pre-wrap;font-size:11px;line-height:1.5;color:#e2eff7}.nr-phone-bubble .stamp{font:700 7px/1.4 ui-monospace,Consolas,monospace;color:#7895a9;margin-top:4px}.nr-phone-compose{display:flex;gap:7px;margin-top:9px}.nr-phone-compose input{flex:1;min-width:0;border:1px solid #2e4b60;border-radius:9px;padding:11px 10px;background:#06111d;color:#f2fbff;font:11px system-ui,Arial,sans-serif;outline:none}.nr-phone-compose input:focus{border-color:#73e9e1}.nr-phone-contact-row{display:flex;align-items:center;gap:10px;padding:11px;border:1px solid rgba(128,177,204,.16);border-radius:11px;background:rgba(14,30,46,.62);margin-bottom:8px}.nr-phone-contact-avatar{width:39px;height:39px;flex:none;display:grid;place-items:center;border:1px solid rgba(255,110,214,.3);border-radius:11px;background:rgba(255,89,208,.08);font-size:18px}.nr-phone-contact-info{flex:1;min-width:0}.nr-phone-contact-info b{display:block;color:#eff9ff;font-size:11px}.nr-phone-contact-info span{display:block;margin-top:4px;color:#8eabbc;font-size:9px;line-height:1.4}.nr-phone-contact-row button{flex:none}.nr-phone-foot{flex:none;border-top:1px solid rgba(143,190,217,.12);padding:9px 14px 11px;text-align:center;color:#617f94;font:800 8px/1.5 ui-monospace,Consolas,monospace;letter-spacing:1px;background:rgba(0,0,0,.15)}
 @media(max-width:520px){#nr-phone-launcher{top:auto;bottom:201px;right:10px;padding:9px 10px;font-size:9px}#nr-photo-hud{bottom:12px}#nr-phone-device{width:100%;height:calc(100dvh - 14px);max-height:calc(100dvh - 14px);min-height:0;border-radius:20px}#nr-phone-top{padding:13px 13px 10px}#nr-phone-tabs{padding-left:8px;padding-right:8px;gap:4px}.nr-phone-tab{padding:8px 2px;font-size:7px}#nr-phone-content{padding:10px}.nr-phone-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.nr-phone-quest{padding:8px}.nr-phone-quest p{min-height:48px}.nr-phone-quest-art{height:45px}.nr-phone-panel{padding:10px}}
 @media(max-width:350px){.nr-phone-grid{grid-template-columns:1fr}.nr-phone-quest p{min-height:0}}
@@ -10125,6 +10117,7 @@
       <button class="nr-phone-tab" data-nr-phone-tab="gallery"><span class="nr-phone-tab-icon">🖼️</span>GALLERY</button>
       <button class="nr-phone-tab" data-nr-phone-tab="messages"><span class="nr-phone-tab-icon">💬</span>MESSAGES</button>
       <button class="nr-phone-tab" data-nr-phone-tab="contacts"><span class="nr-phone-tab-icon">👥</span>CONTACTS</button>
+      <button class="nr-phone-tab" data-nr-phone-tab="npcs"><span class="nr-phone-tab-icon">🧑‍🚀</span>NPC TEXTS <span id="nr-npc-tab-count" class="nr-npc-tab-count"></span></button>
     </nav>
     <main id="nr-phone-content"></main>
     <div class="nr-phone-foot">P TO TOGGLE PHONE <span style="color:#365b70"> · </span> F TO SNAP AT A GLOWING CAMERA MARKER</div>
@@ -10160,11 +10153,26 @@
   let lastStatus = '';
   let store = readStore();
 
+  // NPCs appear across the procedurally generated city. Their first message is sent
+  // the first time the player approaches them; all dialogue and quest progress saves locally.
+  const NPC_DEFS = [
+    {id:'jax',name:'Jax Reyes',role:'ROOFTOP RUNNER',icon:'🧢',color:0x54f3de,intro:'Yo, you found my rooftop. Take 2 photos after meeting me and I will show you a shortcut worth knowing.',task:{type:'photos',target:2,title:'Roofline Scout',description:'Take 2 new photo-quest pictures after meeting Jax.',reward:80},replies:['Keep your momentum through the next roof gap.','The best angles are usually one building higher.','I will keep an eye out for your next shot.']},
+    {id:'mira',name:'Mira Sol',role:'SKYLINE PHOTOGRAPHER',icon:'📷',color:0xff74d7,intro:'Hey, fellow photographer. Finish 2 photo quests after we meet and send me your favorite angle.',task:{type:'completions',target:2,title:'Frame It Right',description:'Complete 2 new photo quests after meeting Mira.',reward:100},replies:['The city looks different from every roof. Keep exploring.','That collection is starting to look impressive.','Try framing the skyline between two towers.']},
+    {id:'zed',name:'Zed Volt',role:'RACE REGULAR',icon:'⚡',color:0xffd66c,intro:'Name is Zed. Think you are fast? Complete a city race and message me your time.',task:{type:'race',target:1,title:'Prove Your Speed',description:'Finish a city race to earn Zed’s respect.',reward:125},replies:['A clean run beats a reckless one. Usually.','Try chasing your ghost on the next attempt.','You have got speed. Now make it consistent.']},
+    {id:'nova',name:'Nova Quinn',role:'OUTER-RING SCOUT',icon:'🌠',color:0x8f9cff,intro:'I scout the outer rooftops. Capture a photo at least 420 units from the city center, then send me a message.',task:{type:'outer-photo',target:1,title:'Outer-Ring Proof',description:'Take a photo from the outer city (420+ units from the center).',reward:110},replies:['There are more rooftops beyond the main skyline.','Look at the map shape and push farther out.','That outer view was worth the trip, right?']},
+    {id:'patch',name:'Patch',role:'CITY FIXER',icon:'🛠️',color:0x65b9ff,intro:'I know people all over the city. Meet 3 different runners from my list—including me—and I will put in a good word for you.',task:{type:'discover',target:3,title:'Know the Neighborhood',description:'Meet 3 different NPCs around the city.',reward:90},replies:['People open doors that maps cannot. Keep meeting the crew.','You are becoming a familiar face around here.','Word travels fast across the rooftops.']},
+    {id:'lux',name:'Lux Ardent',role:'PHOTO COLLECTOR',icon:'💎',color:0x73ffad,intro:'I collect proof that the city is more than just a route. Take 4 new photos after this message and I will trade you a rare title.',task:{type:'photos',target:4,title:'Collector’s Eye',description:'Take 4 new photo-quest pictures after meeting Lux.',reward:150},replies:['Another photo for the archive. I like your eye.','Keep that camera ready. The city never sits still.','Your collection is getting serious.']},
+    {id:'orbit',name:'Orbit',role:'RACE ENGINEER',icon:'🛰️',color:0x77d6ff,intro:'I tune race routes. Finish 2 city races and I will tell you what to look for in your next run.',task:{type:'race',target:2,title:'Circuit Certified',description:'Finish 2 city races while Orbit is on your contacts list.',reward:160},replies:['Review your splits; the slow corner is usually the real enemy.','Your race data is looking much better.','Keep the ghost in sight and trust your route.']},
+    {id:'echo',name:'Echo Venn',role:'NEON MESSENGER',icon:'🎧',color:0xff9d65,intro:'I carry messages from the far side of town. Meet 4 NPCs and I will share my hidden rooftop route.',task:{type:'discover',target:4,title:'Familiar Faces',description:'Meet 4 different NPCs around the city.',reward:120},replies:['You are building a good network out here.','The city feels smaller when you know people.','Keep exploring; someone new is always around the next block.']}
+  ];
+  let npcMarkers = [];
+  let selectedNpcId = null;
+
   function readStore() {
     try {
       const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-      return { completed: Array.isArray(raw.completed) ? raw.completed.filter(x => typeof x === 'string') : [], photos: Array.isArray(raw.photos) ? raw.photos.filter(isSafePhoto).slice(-18) : [], chats: raw.chats && typeof raw.chats === 'object' ? raw.chats : { friend: [], notes: [] }, lastName: typeof raw.lastName === 'string' ? raw.lastName : 'Runner' };
-    } catch (_) { return { completed: [], photos: [], chats: { friend: [], notes: [] }, lastName: 'Runner' }; }
+      return { completed: Array.isArray(raw.completed) ? raw.completed.filter(x => typeof x === 'string') : [], photos: Array.isArray(raw.photos) ? raw.photos.filter(isSafePhoto).slice(-18) : [], chats: raw.chats && typeof raw.chats === 'object' ? raw.chats : { friend: [], notes: [] }, lastName: typeof raw.lastName === 'string' ? raw.lastName : 'Runner', npcSeen: Array.isArray(raw.npcSeen) ? raw.npcSeen.filter(x => typeof x === 'string') : [], npcThreads: raw.npcThreads && typeof raw.npcThreads === 'object' ? raw.npcThreads : {}, npcReadAt: raw.npcReadAt && typeof raw.npcReadAt === 'object' ? raw.npcReadAt : {}, npcBaseline: raw.npcBaseline && typeof raw.npcBaseline === 'object' ? raw.npcBaseline : {}, npcCompleted: Array.isArray(raw.npcCompleted) ? raw.npcCompleted.filter(x => typeof x === 'string') : [], npcRep: Number.isFinite(Number(raw.npcRep)) ? Math.max(0, Number(raw.npcRep)) : 0, npcRaceFinishes: Number.isFinite(Number(raw.npcRaceFinishes)) ? Math.max(0, Number(raw.npcRaceFinishes)) : 0 };
+    } catch (_) { return { completed: [], photos: [], chats: { friend: [], notes: [] }, lastName: 'Runner', npcSeen: [], npcThreads: {}, npcReadAt: {}, npcBaseline: {}, npcCompleted: [], npcRep: 0, npcRaceFinishes: 0 }; }
   }
   function isSafePhoto(p) { return p && typeof p === 'object' && typeof p.image === 'string' && p.image.startsWith('data:image/jpeg;base64,') && p.image.length < 150000 && typeof p.title === 'string'; }
   function saveStore() {
@@ -10241,13 +10249,159 @@
     root.userData.photoQuest={id:q.id,ring,ring2,beam,sprite,baseY:q.y+5.4,phase:Math.random()*Math.PI*2}; scene.add(root);
     questMarkers.push({id:q.id,root,ring,ring2,beam,sprite});
   }
+  function npcById(id) { return NPC_DEFS.find(n => n.id === id); }
+  function ensureNpcStore() {
+    if (!Array.isArray(store.npcSeen)) store.npcSeen = [];
+    if (!store.npcThreads || typeof store.npcThreads !== 'object') store.npcThreads = {};
+    if (!store.npcReadAt || typeof store.npcReadAt !== 'object') store.npcReadAt = {};
+    if (!store.npcBaseline || typeof store.npcBaseline !== 'object') store.npcBaseline = {};
+    if (!Array.isArray(store.npcCompleted)) store.npcCompleted = [];
+    if (!Number.isFinite(Number(store.npcRep))) store.npcRep = 0;
+    NPC_DEFS.forEach(n => { if (!Array.isArray(store.npcThreads[n.id])) store.npcThreads[n.id] = []; });
+  }
+  function npcUnreadCount() {
+    ensureNpcStore();
+    return NPC_DEFS.reduce((sum,n) => { const thread=store.npcThreads[n.id]||[]; const latest=thread[thread.length-1]; return sum + (store.npcSeen.includes(n.id) && latest && Number(latest.at)>(Number(store.npcReadAt[n.id])||0) ? 1 : 0); },0);
+  }
+  function updateNpcTabBadge() {
+    const badge=$('nr-npc-tab-count'); if(!badge)return;
+    const n=npcUnreadCount(); badge.textContent=n?String(n):''; badge.style.display=n?'inline-flex':'none';
+    const launcher=$('nr-phone-launcher'); if(launcher && !phoneOpen) launcher.textContent=n?'📱 PHONE · P · '+n+' NEW':'📱 PHONE · P';
+  }
+  function npcPushMessage(id, text, out=false) {
+    ensureNpcStore(); const npc=npcById(id); if(!npc)return;
+    const thread=store.npcThreads[id];
+    thread.push({id:'npc-'+id+'-'+Date.now()+'-'+Math.random().toString(36).slice(2,5),from:out?localName():npc.name,text:String(text||'').slice(0,500),at:Date.now(),out:!!out});
+    store.npcThreads[id]=thread.slice(-100); saveStore(); updateNpcTabBadge();
+  }
+  function npcQuestProgress(npc) {
+    ensureNpcStore(); const base=store.npcBaseline[npc.id]||{}; let value=0;
+    if(npc.task.type==='photos') value=store.photos.filter(p=>Number(p.date)>Number(base.at||0)).length;
+    else if(npc.task.type==='completions') value=Math.max(0,store.completed.length-(Number(base.completed)||0));
+    else if(npc.task.type==='discover') value=Math.max(0,store.npcSeen.length-Math.max(0,(Number(base.discoveredCount)||1)-1));
+    else if(npc.task.type==='outer-photo') value=store.photos.filter(p=>Number(p.date)>Number(base.at||0)&&Math.hypot(Number(p.x)||0,Number(p.z)||0)>=420).length;
+    else if(npc.task.type==='race') value=Math.max(0,(Number(store.npcRaceFinishes)||0)-(Number(base.races)||0));
+    return {value:Math.min(npc.task.target,value),target:npc.task.target,done:value>=npc.task.target,raw:value};
+  }
+  function countSavedRaces() {
+    try { const raw=JSON.parse(localStorage.getItem('neonRunnerCityRaceGhostsV1')||'{}'); return Object.values(raw||{}).filter(r=>r&&Number.isFinite(Number(r.time))&&Number(r.time)>0&&Array.isArray(r.track)&&r.track.length>1).length; } catch(_) { return 0; }
+  }
+  function npcLabelTexture(npc) {
+    const c=document.createElement('canvas'); c.width=512; c.height=112; const x=c.getContext('2d');
+    const met=store.npcSeen.includes(npc.id), done=store.npcCompleted.includes(npc.id);
+    x.fillStyle='rgba(3,12,25,.92)'; x.beginPath(); if(x.roundRect)x.roundRect(6,6,500,100,18);else x.rect(6,6,500,100); x.fill();
+    x.strokeStyle=done?'#ffd778':met?'#65ffbb':'#65eaff'; x.lineWidth=4; x.stroke();
+    x.textBaseline='middle'; x.textAlign='left'; x.font='bold 48px sans-serif'; x.fillStyle=done?'#ffd778':met?'#9bffce':'#9cefff'; x.fillText(npc.icon,22,55);
+    x.fillStyle='#effbff'; x.font='900 25px monospace'; x.fillText(npc.name.toUpperCase().slice(0,22),100,42);
+    x.fillStyle=done?'#ffd778':met?'#8dffca':'#92bfce'; x.font='900 15px monospace'; x.fillText(done?'QUEST COMPLETE':met?'MESSAGE READY':'MEET '+npc.name.toUpperCase(),101,74);
+    return new THREE.CanvasTexture(c);
+  }
+  function clearNpcMarkers() {
+    npcMarkers.forEach(m=>{ if(m.root&&typeof scene!=='undefined')scene.remove(m.root); if(m.root)m.root.traverse?.(o=>{o.geometry?.dispose?.();if(o.material){const ms=Array.isArray(o.material)?o.material:[o.material];ms.forEach(mat=>{mat.map?.dispose?.();mat.dispose?.();});}}); });
+    npcMarkers=[];
+  }
+  function pickNpcLocations() {
+    const raw=Array.isArray(buildingPositions)?buildingPositions.filter(b=>b&&Number.isFinite(b.x)&&Number.isFinite(b.y)&&Number.isFinite(b.z)&&Math.hypot(b.x,b.z)>45):[];
+    const maxRadius=(typeof CHROMEBOOK_MODE!=='undefined'&&CHROMEBOOK_MODE)?500:880;
+    const candidates=raw.filter(b=>Math.hypot(b.x,b.z)<=maxRadius);
+    const selected=[];
+    const photoPoints=quests||[];
+    const angles=[-.15,.72,1.48,2.25,3.10,3.88,4.66,5.45];
+    const fractions=[.18,.34,.49,.66,.82,.91,.56,.40];
+    const result=[];
+    for(let i=0;i<NPC_DEFS.length;i++){
+      const a=angles[i],r=maxRadius*fractions[i],tx=Math.cos(a)*r,tz=Math.sin(a)*r;let best=null,bestScore=Infinity;
+      for(const b of candidates){
+        if(selected.some(q=>Math.hypot(q.x-b.x,q.z-b.z)<65))continue;
+        const d2=(b.x-tx)**2+(b.z-tz)**2;
+        const overlap=photoPoints.some(q=>Math.hypot(q.x-b.x,q.z-b.z)<27)?4500:0;
+        const score=d2+overlap;if(score<bestScore){bestScore=score;best=b;}
+      }
+      if(best){const pos={x:best.x,y:best.y,z:best.z,w:best.w||32,d:best.d||32};selected.push(pos);result.push(pos);}
+      else if(photoPoints.length){const q=photoPoints[(i*3+2)%photoPoints.length];const pos={x:q.x+((i%2)?10:-10),y:q.y,z:q.z+((i%3)-1)*12,w:q.w,d:q.d};result.push(pos);}
+    }
+    return result;
+  }
+  function makeNpcMarker(npc, pos) {
+    const root=new THREE.Group(); root.name='City NPC '+npc.name; root.position.set(pos.x,pos.y,pos.z);
+    const mat=new THREE.MeshStandardMaterial({color:npc.color,emissive:npc.color,emissiveIntensity:.35,roughness:.45,metalness:.1});
+    const accent=new THREE.MeshBasicMaterial({color:npc.color,transparent:true,opacity:.82,depthWrite:false});
+    const visorMat=new THREE.MeshBasicMaterial({color:0xf4ffff,transparent:true,opacity:.92,depthWrite:false});
+    const addBox=(w,h,d,m,x,y,z)=>{const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);mesh.position.set(x,y,z);root.add(mesh);return mesh;};
+    const head=new THREE.Mesh(new THREE.SphereGeometry(.34,12,10),mat);head.position.set(0,1.92,0);root.add(head);
+    addBox(.58,.9,.34,mat,0,1.1,0);addBox(.42,.13,.045,accent,0,1.23,-.19);addBox(.48,.11,.07,visorMat,0,1.96,-.29);
+    addBox(.18,.68,.22,mat,-.42,1.13,0).rotation.z=-.12;addBox(.18,.68,.22,mat,.42,1.13,0).rotation.z=.12;
+    addBox(.22,.62,.24,mat,-.17,.42,0);addBox(.22,.62,.24,mat,.17,.42,0);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(1.35,.085,8,28),accent);ring.rotation.x=Math.PI/2;ring.position.y=.11;root.add(ring);
+    const halo=new THREE.Mesh(new THREE.TorusGeometry(.57,.055,6,24),accent.clone());halo.rotation.x=Math.PI/2;halo.position.y=2.48;root.add(halo);
+    const beam=new THREE.Mesh(new THREE.CylinderGeometry(.025,.10,3.7,8,1,true),new THREE.MeshBasicMaterial({color:npc.color,transparent:true,opacity:.18,depthWrite:false}));beam.position.y=2.2;root.add(beam);
+    const label=new THREE.Sprite(new THREE.SpriteMaterial({map:npcLabelTexture(npc),transparent:true,depthTest:false,depthWrite:false}));label.scale.set(9.5,2.08,1);label.position.y=3.65;label.renderOrder=600;root.add(label);
+    root.userData.cityNpc={id:npc.id,ring,halo,label,beam,phase:Math.random()*6.28,baseY:pos.y};
+    scene.add(root);npcMarkers.push({id:npc.id,npc,root,ring,halo,label,x:pos.x,y:pos.y,z:pos.z});
+  }
+  function refreshNpcMarker(npc) {
+    const m=npcMarkers.find(v=>v.id===npc.id);if(!m)return;
+    const done=store.npcCompleted.includes(npc.id),met=store.npcSeen.includes(npc.id),color=done?0xffd778:met?0x65ffbb:npc.color;
+    m.ring.material.color.setHex(color);m.halo.material.color.setHex(color);m.beam.material.color.setHex(color);
+    const old=m.label.material.map;m.label.material.map=npcLabelTexture(npc);m.label.material.needsUpdate=true;if(old)old.dispose?.();
+  }
+  function setupNpcMarkers() {
+    clearNpcMarkers(); if(typeof scene==='undefined'||typeof THREE==='undefined'||!Array.isArray(buildingPositions)||!buildingPositions.length)return;
+    const positions=pickNpcLocations();NPC_DEFS.forEach((npc,i)=>{if(positions[i])makeNpcMarker(npc,positions[i]);});
+  }
+  function meetNpc(id) {
+    ensureNpcStore(); const npc=npcById(id);if(!npc||store.npcSeen.includes(id))return;
+    store.npcSeen.push(id);store.npcBaseline[id]={at:Date.now(),photos:store.photos.length,completed:store.completed.length,races:Number(store.npcRaceFinishes)||0,discoveredCount:store.npcSeen.length};
+    npcPushMessage(id,npc.intro,false);refreshNpcMarker(npc);saveStore();updateNpcTabBadge();
+    toast('NEW CONTACT · '+npc.name.toUpperCase()+' MESSAGED YOU · PHONE > NPC TEXTS',3600);
+    if(phoneOpen&&activeTab==='npcs')renderPhone();
+    checkNpcQuestCompletions();
+  }
+  function checkNpcQuestCompletions() {
+    ensureNpcStore();let gained=0;
+    NPC_DEFS.forEach(npc=>{
+      if(!store.npcSeen.includes(npc.id)||store.npcCompleted.includes(npc.id))return;
+      const progress=npcQuestProgress(npc);if(!progress.done)return;
+      store.npcCompleted.push(npc.id);store.npcRep+=npc.task.reward;gained++;
+      npcPushMessage(npc.id,'Quest complete! '+npc.task.title+' is done. You earned '+npc.task.reward+' Runner Rep. Meet me again whenever you need another challenge.',false);
+      refreshNpcMarker(npc);
+    });
+    if(gained){saveStore();toast('NPC QUEST COMPLETE · +'+NPC_DEFS.filter(n=>store.npcCompleted.includes(n.id)).reduce((sum,n)=>sum+n.task.reward,0)+' TOTAL REP',3000);if(phoneOpen)renderPhone();}
+  }
+  function npcThreadMarkup(npc) {
+    const thread=store.npcThreads[npc.id]||[];
+    return '<div class="nr-npc-thread"><section class="nr-phone-panel"><div class="nr-phone-section-kicker">DIRECT CHAT // '+esc(npc.name.toUpperCase())+'</div><div class="nr-phone-chat">'+(thread.length?thread.slice(-40).map(m=>'<div class="nr-phone-bubble '+(m.out?'out':'')+'"><div class="sender">'+esc(m.from||npc.name)+'</div><div class="body">'+esc(m.text||'')+'</div><div class="stamp">'+esc(timeLabel(m.at))+'</div></div>').join(''):'<div class="nr-phone-empty">No messages yet.</div>')+'</div><form id="nr-npc-compose-form" class="nr-phone-compose"><input id="nr-npc-compose-input" type="text" maxlength="300" autocomplete="off" placeholder="Message '+esc(npc.name)+'…" aria-label="Message NPC"><button class="nr-phone-primary" type="submit">SEND ↗</button></form></section></div>';
+  }
+  function npcAppMarkup() {
+    ensureNpcStore();
+    const met=store.npcSeen.length,complete=store.npcCompleted.length;
+    const cards=NPC_DEFS.map(npc=>{
+      const seen=store.npcSeen.includes(npc.id),done=store.npcCompleted.includes(npc.id),prog=npcQuestProgress(npc),thread=store.npcThreads[npc.id]||[],last=thread[thread.length-1];
+      return '<article class="nr-phone-quest nr-npc-card '+(done?'done':'')+(selectedNpcId===npc.id?' active':'')+'"><div class="nr-phone-quest-art">'+(seen?npc.icon:'❔')+'</div><small>'+(seen?(done?'QUEST COMPLETE':'CONTACT DISCOVERED'):'UNKNOWN CONTACT')+'</small><h3>'+esc(seen?npc.name:'Unknown Runner')+'</h3><p>'+(seen?esc(npc.role+' · '+(last?last.text:'You have met this runner.')):'Find this runner somewhere in the city and approach them to unlock their messages.')+'</p>'+(seen?'<div class="nr-npc-quest-line"><b>'+esc(npc.task.title)+' · '+prog.value+'/'+prog.target+'</b><span>'+esc(npc.task.description)+'</span><div class="nr-phone-progress"><div style="width:'+Math.min(100,prog.value/Math.max(1,prog.target)*100)+'%"></div></div><span class="nr-npc-reward">'+(done?'✓ REWARD CLAIMED':'REWARD: '+npc.task.reward+' RUNNER REP')+'</span></div>':'')+'<div class="nr-phone-buttons">'+(seen?'<button class="nr-phone-primary" data-nr-npc-open="'+npc.id+'">'+(selectedNpcId===npc.id?'CHAT OPEN':'OPEN CHAT')+(last&&Number(last.at)>(Number(store.npcReadAt[npc.id])||0)?' · NEW':'')+'</button>':'<button class="nr-phone-secondary" data-nr-npc-find="'+npc.id+'">FIND IN CITY</button>')+'</div></article>';
+    }).join('');
+    const selected=npcById(selectedNpcId);const thread=selected&&store.npcSeen.includes(selected.id)?npcThreadMarkup(selected):'';
+    return '<section class="nr-phone-panel"><div class="nr-phone-section-kicker">CITY CONTACTS // INBOX</div><h3>'+met+' / '+NPC_DEFS.length+' RUNNERS MET</h3><p>Approach a hologram runner around the rooftops to meet them. They will message your phone the first time you find them, then give you a personal quest to complete.</p><div class="nr-phone-progress"><div style="width:'+(met/NPC_DEFS.length*100)+'%"></div></div><div class="nr-phone-buttons"><span class="nr-npc-unseen">'+npcUnreadCount()+' UNREAD</span><span class="nr-npc-unseen">'+complete+' QUESTS COMPLETE</span><span class="nr-npc-unseen">'+Number(store.npcRep||0)+' RUNNER REP</span></div></section><div class="nr-phone-section-kicker">RUNNERS AROUND THE CITY</div><div class="nr-phone-grid">'+cards+'</div>'+(thread?thread:'');
+  }
+  function sendNpcReply(text) {
+    ensureNpcStore();const npc=npcById(selectedNpcId);if(!npc||!store.npcSeen.includes(npc.id)){toast('MEET THIS RUNNER IN THE CITY FIRST');return;}
+    const cleaned=String(text||'').replace(/[\u0000-\u001f]/g,'').trim().slice(0,300);if(!cleaned)return;
+    npcPushMessage(npc.id,cleaned,true);store.npcReadAt[npc.id]=Date.now();saveStore();renderPhone();
+    const lower=cleaned.toLowerCase();let reply=npc.replies[Math.floor(Math.random()*npc.replies.length)];
+    if(/photo|picture|shot|camera/.test(lower))reply='Send me your best city shot when you get a chance. Your current objective is: '+npc.task.description;
+    else if(/quest|task|mission|objective/.test(lower))reply='Your current quest is “'+npc.task.title+'”: '+npc.task.description;
+    else if(/hello|hey|hi\b/.test(lower))reply='Hey, Runner. Glad you checked your messages. Keep moving and I will keep in touch.';
+    setTimeout(()=>{if(!store.npcSeen.includes(npc.id))return;npcPushMessage(npc.id,reply,false);if(!phoneOpen)toast('NEW NPC TEXT FROM '+npc.name.toUpperCase()+' · PRESS P',3000);if(phoneOpen&&activeTab==='npcs')renderPhone();},550);
+  }
+
   function setupQuests() {
     if (typeof scene==='undefined' || typeof THREE==='undefined' || !Array.isArray(buildingPositions) || !buildingPositions.length) return;
     clearWorldMarkers();
+    clearNpcMarkers();
     quests=pickTargets();
     if (!quests.length) return;
     if (!quests.some(q=>q.id===activeQuestId && !store.completed.includes(q.id))) activeQuestId=quests.find(q=>!store.completed.includes(q.id))?.id || quests[0].id;
     quests.forEach(makeMarker);
+    setupNpcMarkers();
     updatePhoneStatus(); renderHud(true);
   }
   function refreshMarker(q) {
@@ -10348,7 +10502,9 @@
     if(activeTab==='quests')host.innerHTML=questsMarkup();
     else if(activeTab==='gallery')host.innerHTML=galleryMarkup();
     else if(activeTab==='messages')host.innerHTML=messagesMarkup();
+    else if(activeTab==='npcs')host.innerHTML=npcAppMarkup();
     else host.innerHTML=contactsMarkup();
+    updateNpcTabBadge();
     const log=$('nr-phone-chat-log');if(log)log.scrollTop=log.scrollHeight;
   }
   function openPhone() {
@@ -10401,6 +10557,7 @@
       if(!phoneOpen)toast('PHOTO RECEIVED FROM '+from.toUpperCase()+' · PRESS P TO VIEW',3200);if(phoneOpen)renderPhone();
     }
   }
+  window.addEventListener('neonrunner:race-finished',()=>{ensureNpcStore();store.npcRaceFinishes=(Number(store.npcRaceFinishes)||0)+1;saveStore();checkNpcQuestCompletions();if(phoneOpen&&activeTab==='npcs')renderPhone();});
   window.__neonPhoneReceive=receivePacket;
   window.openNeonPhone=openPhone;
   window.closeNeonPhone=closePhone;
@@ -10414,6 +10571,8 @@
   document.querySelectorAll('[data-nr-phone-tab]').forEach(b=>b.addEventListener('click',()=>{activeTab=b.dataset.nrPhoneTab;renderPhone();}));
   $('nr-phone-content').addEventListener('click',e=>{
     const el=e.target.closest('button');if(!el)return;
+    if(el.dataset.nrNpcOpen){selectedNpcId=el.dataset.nrNpcOpen;const thread=store.npcThreads[selectedNpcId]||[];if(thread.length)store.npcReadAt[selectedNpcId]=Number(thread[thread.length-1].at)||Date.now();saveStore();renderPhone();return;}
+    if(el.dataset.nrNpcFind){const npc=npcById(el.dataset.nrNpcFind);toast(npc?'FIND '+npc.name.toUpperCase()+' NEAR A GLOWING RUNNER MARKER':'LOOK FOR UNKNOWN RUNNERS AROUND THE CITY',2800);return;}
     if(el.dataset.nrPin){selectQuest(el.dataset.nrPin);return;}
     if(el.hasAttribute('data-nr-pin-next')){const q=quests.find(v=>!store.completed.includes(v.id));if(q)selectQuest(q.id);else toast('ALL PHOTO QUESTS COMPLETE');return;}
     if(el.dataset.nrViewPhoto){const p=store.photos.find(v=>v.questId===el.dataset.nrViewPhoto);if(p){activeTab='gallery';renderPhone();}else{activeTab='gallery';renderPhone();}return;}
@@ -10424,7 +10583,7 @@
     if(el.dataset.nrContactChat){window.__nrPhoneChatMode=el.dataset.nrContactChat;activeTab='messages';renderPhone();return;}
     if(el.hasAttribute('data-nr-open-mp')){closePhone();if(typeof window.openNeonMultiplayer==='function')window.openNeonMultiplayer();return;}
   });
-  $('nr-phone-content').addEventListener('submit',e=>{if(e.target&&e.target.id==='nr-phone-compose-form'){e.preventDefault();sendText($('nr-phone-compose-input')?.value||'');const input=$('nr-phone-compose-input');if(input)input.value='';}});
+  $('nr-phone-content').addEventListener('submit',e=>{if(e.target&&e.target.id==='nr-phone-compose-form'){e.preventDefault();sendText($('nr-phone-compose-input')?.value||'');const input=$('nr-phone-compose-input');if(input)input.value='';return;}if(e.target&&e.target.id==='nr-npc-compose-form'){e.preventDefault();sendNpcReply($('nr-npc-compose-input')?.value||'');const input=$('nr-npc-compose-input');if(input)input.value='';}});
   // Capture these shortcuts before the game's normal movement handler. While the popup is open,
   // stop game controls from moving the player but leave normal input editing and button clicks intact.
   window.addEventListener('keydown',e=>{
@@ -10440,7 +10599,7 @@
   if(typeof originalInit==='function'){
     window.initGame=function(mode){const result=originalInit.apply(this,arguments);setTimeout(()=>{setupQuests();},80);return result;};
   }
-  function syncLauncher(){const playing=typeof GAME_STARTED!=='undefined'&&GAME_STARTED;$('nr-phone-launcher').style.display=playing?'block':'none';if(!playing&&!phoneOpen)$('nr-photo-hud').style.display='none';}
+  function syncLauncher(){const playing=typeof GAME_STARTED!=='undefined'&&GAME_STARTED&&window.NEON_NORMAL_MODE===true;$('nr-phone-launcher').style.display=playing?'block':'none';if(!playing&&!phoneOpen)$('nr-photo-hud').style.display='none';updateNpcTabBadge();}
   let lastFrame=performance.now();
   function tick(){
     const now=performance.now(),dt=Math.min(.05,(now-lastFrame)/1000||0);lastFrame=now;
@@ -10450,18 +10609,15 @@
       if(!q){q=unfinished.slice().sort((a,b)=>horizontalDistance(a)-horizontalDistance(b))[0];if(q)activeQuestId=q.id;}
       const closest=unfinished.slice().sort((a,b)=>horizontalDistance(a)-horizontalDistance(b))[0];nearQuestId=closest&&canCapture(closest)?closest.id:null;
       questMarkers.forEach(m=>{const data=m.root.userData.photoQuest;if(!data)return;data.phase+=dt*(m.id===activeQuestId?2.5:1.15);m.root.rotation.y=Math.sin(data.phase)*.09;m.ring.rotation.z+=dt*(m.id===activeQuestId?1.05:.45);m.ring2.rotation.z-=dt*.6;const done=store.completed.includes(m.id);m.root.visible=true;if(m.id===activeQuestId&&!done){const pulse=.75+(Math.sin(data.phase*2)+1)*.15;m.ring.material.opacity=pulse;} });
+      npcMarkers.forEach(m=>{const data=m.root.userData.cityNpc;if(!data)return;data.phase+=dt*1.5;m.root.position.y=data.baseY+Math.sin(data.phase)*.12;m.root.rotation.y=Math.sin(data.phase*.55)*.09;m.ring.rotation.z+=dt*.35;m.halo.rotation.z-=dt*.6;const d=Math.hypot(player.position.x-m.x,player.position.z-m.z);if(!store.npcSeen.includes(m.id)&&d<17&&Math.abs(player.position.y-m.y)<20)meetNpc(m.id);});
+      checkNpcQuestCompletions();
       renderHud(false);
     }
     syncLauncher();updatePhoneStatus();requestAnimationFrame(tick);
   }
   // Keep quest markers tied to each newly generated procedural city.
-  renderPhone(); syncLauncher(); requestAnimationFrame(tick);
-  // Add convenient entry points to both the menu and the in-game phone launcher.
-  const mainMenu=$('main-menu');
-  if(mainMenu&&!mainMenu.querySelector('[data-open-neon-phone]')){
-    const b=document.createElement('button');b.type='button';b.className='menu-btn';b.dataset.openNeonPhone='true';b.textContent='PHOTO QUESTS // RUNNER PHONE';b.style.borderColor='#ff72d8';b.style.color='#ffc6ed';b.style.boxShadow='0 0 18px rgba(255,107,214,.14)';b.addEventListener('click',openPhone);
-    const race=mainMenu.querySelector('[data-open-city-races]');if(race&&race.parentNode)race.parentNode.insertBefore(b,race.nextSibling);else mainMenu.appendChild(b);
-  }
+  ensureNpcStore(); renderPhone(); syncLauncher(); requestAnimationFrame(tick);
+  // Photo quests, NPC texts and sharing are opened from the in-game phone launcher in Normal mode.
 })();
 </script>
 

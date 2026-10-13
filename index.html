@@ -10239,6 +10239,10 @@
   ];
   let npcMarkers = [];
   let selectedNpcId = null;
+  let nearbyTalkNpcId = null;
+  let npcDialogueOpen = false;
+  let dialogueNpcId = null;
+  let dialogueLine = 0;
 
   function readStore() {
     try {
@@ -10323,6 +10327,125 @@
     root.add(sprite);
     root.userData.photoQuest={id:q.id,ring,ring2,beam,sprite,baseY:q.y+5.4,phase:Math.random()*Math.PI*2}; scene.add(root);
     questMarkers.push({id:q.id,root,ring,ring2,beam,sprite});
+  }
+  function ensureNpcTalkUi() {
+    if ($('nr-npc-talk-prompt') && $('nr-npc-dialogue')) return;
+    if (!$('nr-npc-talk-style')) {
+      const style = document.createElement('style'); style.id = 'nr-npc-talk-style';
+      style.textContent = `
+        #nr-npc-talk-prompt{display:none;position:fixed;left:50%;bottom:clamp(92px,12vh,150px);transform:translateX(-50%);z-index:7700;max-width:calc(100vw - 24px);padding:10px 15px;border:1px solid rgba(102,246,224,.68);border-radius:12px;background:linear-gradient(120deg,rgba(3,17,29,.96),rgba(18,14,37,.96));box-shadow:0 0 26px rgba(55,233,221,.16),0 12px 40px rgba(0,0,0,.36);color:#eaffff;font:900 11px/1.3 ui-monospace,Consolas,monospace;letter-spacing:.8px;text-align:center;pointer-events:auto;align-items:center;gap:12px}
+        #nr-npc-talk-prompt span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        #nr-npc-talk-prompt button{flex:none;border:1px solid #70f4dd;border-radius:8px;padding:8px 10px;background:linear-gradient(100deg,#00cbb0,#54d8f5);color:#03121b;font:900 10px ui-monospace,Consolas,monospace;cursor:pointer}
+        #nr-npc-dialogue{display:none;position:fixed;inset:0;z-index:9400;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;background:rgba(2,5,15,.72);backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);font-family:Inter,Segoe UI,Arial,sans-serif;color:#eaf8ff;pointer-events:auto}
+        #nr-npc-dialogue *{box-sizing:border-box}
+        #nr-npc-dialogue .nr-dialog-card{width:min(480px,100%);max-height:min(720px,92vh);overflow:auto;border:1px solid rgba(111,239,224,.43);border-radius:20px;background:linear-gradient(145deg,rgba(11,27,42,.99),rgba(7,12,25,.99) 62%,rgba(26,11,35,.98));box-shadow:0 25px 90px rgba(0,0,0,.64),0 0 42px rgba(63,219,226,.12);padding:22px}
+        #nr-npc-dialogue .nr-dialog-top{display:flex;align-items:center;gap:13px}
+        #nr-npc-dialogue .nr-dialog-avatar{display:grid;place-items:center;flex:none;width:58px;height:58px;border:1px solid var(--npc-tint,#65efdb);border-radius:16px;background:color-mix(in srgb,var(--npc-tint,#65efdb) 17%,#0c1728);font-size:30px;box-shadow:0 0 25px color-mix(in srgb,var(--npc-tint,#65efdb) 15%,transparent)}
+        #nr-npc-dialogue .nr-dialog-role{color:var(--npc-tint,#75eedb);font:900 9px/1.4 ui-monospace,Consolas,monospace;letter-spacing:1.7px}
+        #nr-npc-dialogue h2{margin:5px 0 0;color:#f5fcff;font-size:clamp(23px,4vw,30px);line-height:1.1}
+        #nr-npc-dialogue .nr-dialog-text{margin:18px 0 13px;padding:15px;border:1px solid rgba(136,187,215,.18);border-radius:13px;background:rgba(3,12,23,.62);color:#d6e8f2;font-size:13px;line-height:1.65;white-space:pre-line}
+        #nr-npc-dialogue .nr-dialog-quest{padding:12px;border:1px solid rgba(123,173,205,.16);border-radius:12px;background:rgba(255,255,255,.025);margin-bottom:13px}
+        #nr-npc-dialogue .nr-dialog-quest small{display:block;color:#74e8db;font:900 8px/1.4 ui-monospace,Consolas,monospace;letter-spacing:1.4px;margin-bottom:5px}
+        #nr-npc-dialogue .nr-dialog-quest b{display:block;color:#f1f8ff;font-size:13px;margin-bottom:4px}
+        #nr-npc-dialogue .nr-dialog-quest span{display:block;color:#9db5c8;font-size:11px;line-height:1.5}
+        #nr-npc-dialogue .nr-dialog-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+        #nr-npc-dialogue .nr-dialog-actions button{min-width:0;padding:11px 9px;border:1px solid rgba(115,179,205,.3);border-radius:10px;background:rgba(20,40,57,.86);color:#dff6ff;font:850 10px/1.3 ui-monospace,Consolas,monospace;cursor:pointer}
+        #nr-npc-dialogue .nr-dialog-actions button.primary{border-color:#66efdc;background:linear-gradient(100deg,#00cbb0,#54d8f5);color:#03141a}
+        #nr-npc-dialogue .nr-dialog-actions button:hover{filter:brightness(1.15)}
+        @media(max-width:480px){#nr-npc-talk-prompt{bottom:100px;padding:8px 10px;font-size:9px;gap:7px}#nr-npc-dialogue{padding:10px}#nr-npc-dialogue .nr-dialog-card{padding:16px;border-radius:16px}#nr-npc-dialogue .nr-dialog-actions button{font-size:9px;padding:10px 6px}}
+      `;
+      document.head.appendChild(style);
+    }
+    if (!$('nr-npc-talk-prompt')) {
+      const prompt = document.createElement('div'); prompt.id = 'nr-npc-talk-prompt'; prompt.setAttribute('role','status');
+      prompt.innerHTML = '<span id="nr-npc-talk-prompt-label">NEARBY RUNNER</span><button type="button" id="nr-npc-talk-prompt-button">E · TALK</button>';
+      document.body.appendChild(prompt);
+      $('nr-npc-talk-prompt-button').addEventListener('click', () => { if (nearbyTalkNpcId) openNpcDialogue(nearbyTalkNpcId); });
+    }
+    if (!$('nr-npc-dialogue')) {
+      const dialog = document.createElement('div'); dialog.id = 'nr-npc-dialogue'; dialog.setAttribute('role','dialog'); dialog.setAttribute('aria-modal','true'); dialog.setAttribute('aria-label','Talk to city runner');
+      dialog.innerHTML = '<div class="nr-dialog-card"><div class="nr-dialog-top"><div class="nr-dialog-avatar" id="nr-npc-dialog-avatar">✦</div><div><div class="nr-dialog-role" id="nr-npc-dialog-role">CITY RUNNER</div><h2 id="nr-npc-dialog-name">Runner</h2></div></div><div class="nr-dialog-text" id="nr-npc-dialog-text" aria-live="polite">Hey there.</div><div class="nr-dialog-quest"><small>PERSONAL QUEST</small><b id="nr-npc-dialog-quest-title">Explore the city</b><span id="nr-npc-dialog-quest-copy"></span></div><div class="nr-dialog-actions"><button type="button" class="primary" data-nr-npc-dialog-action="talk">KEEP TALKING</button><button type="button" data-nr-npc-dialog-action="quest">ASK ABOUT QUEST</button><button type="button" data-nr-npc-dialog-action="chat">OPEN PHONE CHAT ↗</button><button type="button" data-nr-npc-dialog-action="waypoint">PIN NPC ON MAP</button><button type="button" data-nr-npc-dialog-action="close" style="grid-column:1/-1">GOODBYE</button></div></div>';
+      document.body.appendChild(dialog);
+      dialog.addEventListener('click', e => {
+        if (e.target === dialog) { closeNpcDialogue(); return; }
+        const button = e.target.closest('[data-nr-npc-dialog-action]'); if (!button || !dialogueNpcId) return;
+        const npc = npcById(dialogueNpcId); if (!npc) return;
+        const action = button.dataset.nrNpcDialogueAction;
+        if (action === 'close') { closeNpcDialogue(); return; }
+        if (action === 'chat') { const id = dialogueNpcId; closeNpcDialogue(); selectedNpcId = id; activeTab = 'npcs'; openPhone(); return; }
+        if (action === 'waypoint') { setWaypoint('npc', npc.id); closeNpcDialogue(); return; }
+        if (action === 'quest') {
+          const prog = npcQuestProgress(npc);
+          const line = npc.task.title + '\n' + npc.task.description + '\nProgress: ' + prog.value + ' / ' + prog.target + (prog.done ? ' — complete!' : ' — keep going.');
+          $('nr-npc-dialog-text').textContent = line;
+          npcPushMessage(npc.id, 'Quest details: ' + npc.task.title + '. ' + npc.task.description + ' Progress: ' + prog.value + '/' + prog.target + '.', false);
+          store.npcReadAt[npc.id] = Date.now(); saveStore(); updateNpcTabBadge(); return;
+        }
+        if (action === 'talk') {
+          dialogueLine = (dialogueLine + 1) % Math.max(1, npc.replies.length);
+          const line = npc.replies[dialogueLine] || npc.intro;
+          $('nr-npc-dialog-text').textContent = line;
+          npcPushMessage(npc.id, line, false); store.npcReadAt[npc.id] = Date.now(); saveStore(); updateNpcTabBadge();
+        }
+      });
+      document.addEventListener('keydown', e => {
+        if (npcDialogueOpen && e.code === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); closeNpcDialogue(); }
+      }, true);
+    }
+  }
+  function closestNpcToPlayer(maxDistance = 15) {
+    if (typeof player === 'undefined' || !player.position || !npcMarkers.length) return null;
+    let best = null, bestDistance = maxDistance;
+    for (const marker of npcMarkers) {
+      const dx = player.position.x - marker.x, dz = player.position.z - marker.z;
+      const d = Math.hypot(dx, dz);
+      if (d >= bestDistance || Math.abs(player.position.y - marker.y) > 24) continue;
+      best = marker; bestDistance = d;
+    }
+    return best ? { marker: best, distance: bestDistance } : null;
+  }
+  function updateNpcTalkPrompt() {
+    ensureNpcTalkUi();
+    const prompt = $('nr-npc-talk-prompt');
+    if (!GAME_STARTED || phoneOpen || npcDialogueOpen) { nearbyTalkNpcId = null; prompt.style.display = 'none'; return; }
+    const near = closestNpcToPlayer(16);
+    if (!near) { nearbyTalkNpcId = null; prompt.style.display = 'none'; return; }
+    nearbyTalkNpcId = near.marker.id;
+    const met = store.npcSeen.includes(near.marker.id);
+    $('nr-npc-talk-prompt-label').textContent = (met ? 'TALK TO ' : 'MEET ') + near.marker.npc.name.toUpperCase() + ' · ' + Math.round(near.distance) + 'M';
+    $('nr-npc-talk-prompt-button').textContent = 'E · ' + (met ? 'TALK' : 'MEET');
+    prompt.style.display = 'flex';
+  }
+  function openNpcDialogue(id) {
+    const npc = npcById(id); if (!npc || !GAME_STARTED) return;
+    ensureNpcStore(); ensureNpcTalkUi();
+    if (!store.npcSeen.includes(id)) meetNpc(id);
+    dialogueNpcId = id; selectedNpcId = id; dialogueLine = 0; npcDialogueOpen = true;
+    const tint = '#' + Number(npc.color).toString(16).padStart(6,'0');
+    const dialog = $('nr-npc-dialogue'); dialog.style.setProperty('--npc-tint', tint); dialog.style.display = 'flex';
+    $('nr-npc-dialog-avatar').textContent = npc.icon;
+    $('nr-npc-dialog-role').textContent = npc.role;
+    $('nr-npc-dialog-name').textContent = npc.name;
+    const thread = store.npcThreads[npc.id] || [];
+    const incoming = thread.filter(m => !m.out).slice(-1)[0];
+    $('nr-npc-dialog-text').textContent = incoming ? incoming.text : npc.intro;
+    const prog = npcQuestProgress(npc);
+    $('nr-npc-dialog-quest-title').textContent = npc.task.title + (store.npcCompleted.includes(id) ? ' · COMPLETE' : ' · ' + prog.value + '/' + prog.target);
+    $('nr-npc-dialog-quest-copy').textContent = npc.task.description + ' Reward: ' + npc.task.reward + ' Runner Rep.';
+    if (incoming) { store.npcReadAt[id] = Number(incoming.at) || Date.now(); saveStore(); updateNpcTabBadge(); }
+    if (document.pointerLockElement && document.exitPointerLock) document.exitPointerLock();
+    if (typeof keys !== 'undefined' && keys) Object.keys(keys).forEach(k => { if (typeof keys[k] === 'boolean') keys[k] = false; });
+    if (typeof player !== 'undefined' && player.velocity && player.velocity.set) player.velocity.set(0,0,0);
+    if (typeof endGrapple === 'function') endGrapple();
+    $('nr-npc-talk-prompt').style.display = 'none';
+  }
+  function closeNpcDialogue() {
+    npcDialogueOpen = false; dialogueNpcId = null;
+    const dialog = $('nr-npc-dialogue'); if (dialog) dialog.style.display = 'none';
+    if (typeof keys !== 'undefined' && keys) Object.keys(keys).forEach(k => { if (typeof keys[k] === 'boolean') keys[k] = false; });
+    if (typeof player !== 'undefined' && player.velocity && player.velocity.set) player.velocity.set(0,0,0);
+    if (document.pointerLockElement && document.exitPointerLock) document.exitPointerLock();
+    updateWaypointHud();
   }
   function npcById(id) { return NPC_DEFS.find(n => n.id === id); }
   function ensureNpcStore() {
@@ -10455,7 +10578,7 @@
       return '<article class="nr-phone-quest nr-npc-card '+(done?'done':'')+(selectedNpcId===npc.id?' active':'')+'"><div class="nr-phone-quest-art">'+(seen?npc.icon:'❔')+'</div><small>'+(seen?(done?'QUEST COMPLETE':'CONTACT DISCOVERED'):'UNKNOWN CONTACT')+'</small><h3>'+esc(seen?npc.name:'Unknown Runner')+'</h3><p>'+(seen?esc(npc.role+' · '+(last?last.text:'You have met this runner.')):'Find this runner somewhere in the city and approach them to unlock their messages.')+'</p>'+(seen?'<div class="nr-npc-quest-line"><b>'+esc(npc.task.title)+' · '+prog.value+'/'+prog.target+'</b><span>'+esc(npc.task.description)+'</span><div class="nr-phone-progress"><div style="width:'+Math.min(100,prog.value/Math.max(1,prog.target)*100)+'%"></div></div><span class="nr-npc-reward">'+(done?'✓ REWARD CLAIMED':'REWARD: '+npc.task.reward+' RUNNER REP')+'</span></div>':'')+'<div class="nr-phone-buttons">'+(seen?'<button class="nr-phone-primary" data-nr-npc-open="'+npc.id+'">'+(selectedNpcId===npc.id?'CHAT OPEN':'OPEN CHAT')+(last&&Number(last.at)>(Number(store.npcReadAt[npc.id])||0)?' · NEW':'')+'</button>':'<button class="nr-phone-secondary" data-nr-npc-find="'+npc.id+'">FIND IN CITY</button>')+'</div></article>';
     }).join('');
     const selected=npcById(selectedNpcId);const thread=selected&&store.npcSeen.includes(selected.id)?npcThreadMarkup(selected):'';
-    return '<section class="nr-phone-panel"><div class="nr-phone-section-kicker">CITY CONTACTS // INBOX</div><h3>'+met+' / '+NPC_DEFS.length+' RUNNERS MET</h3><p>Approach a hologram runner around the rooftops to meet them. They will message your phone the first time you find them, then give you a personal quest to complete.</p><div class="nr-phone-progress"><div style="width:'+(met/NPC_DEFS.length*100)+'%"></div></div><div class="nr-phone-buttons"><span class="nr-npc-unseen">'+npcUnreadCount()+' UNREAD</span><span class="nr-npc-unseen">'+complete+' QUESTS COMPLETE</span><span class="nr-npc-unseen">'+Number(store.npcRep||0)+' RUNNER REP</span></div></section><div class="nr-phone-section-kicker">RUNNERS AROUND THE CITY</div><div class="nr-phone-grid">'+cards+'</div>'+(thread?thread:'');
+    return '<section class="nr-phone-panel"><div class="nr-phone-section-kicker">CITY CONTACTS // INBOX</div><h3>'+met+' / '+NPC_DEFS.length+' RUNNERS MET</h3><p>Walk up to a runner and press E to talk. Your first conversation unlocks their phone messages and personal quest; use the map to find them again later.</p><div class="nr-phone-progress"><div style="width:'+(met/NPC_DEFS.length*100)+'%"></div></div><div class="nr-phone-buttons"><span class="nr-npc-unseen">'+npcUnreadCount()+' UNREAD</span><span class="nr-npc-unseen">'+complete+' QUESTS COMPLETE</span><span class="nr-npc-unseen">'+Number(store.npcRep||0)+' RUNNER REP</span></div></section><div class="nr-phone-section-kicker">RUNNERS AROUND THE CITY</div><div class="nr-phone-grid">'+cards+'</div>'+(thread?thread:'');
   }
   function sendNpcReply(text) {
     ensureNpcStore();const npc=npcById(selectedNpcId);if(!npc||!store.npcSeen.includes(npc.id)){toast('MEET THIS RUNNER IN THE CITY FIRST');return;}
@@ -10988,13 +11111,15 @@
   // stop game controls from moving the player but leave normal input editing and button clicks intact.
   window.addEventListener('keydown',e=>{
     if(phoneOpen){if(e.code==='Escape'){e.preventDefault();closePhone();}e.stopImmediatePropagation();return;}
+    if(npcDialogueOpen){if(e.code==='Escape'){e.preventDefault();closeNpcDialogue();}e.stopImmediatePropagation();return;}
     if(!GAME_STARTED)return;
     if(e.repeat)return;
     if(e.code==='KeyP'){e.preventDefault();e.stopImmediatePropagation();openPhone();return;}
+    if(e.code==='KeyE' && nearbyTalkNpcId){e.preventDefault();e.stopImmediatePropagation();openNpcDialogue(nearbyTalkNpcId);return;}
     if(e.code==='KeyF'){e.preventDefault();e.stopImmediatePropagation();captureNearest();return;}
   },true);
   const originalUpdatePhysics=typeof updatePhysics==='function'?updatePhysics:null;
-  if(originalUpdatePhysics){updatePhysics=function(dt){if(phoneOpen){if(typeof player!=='undefined'&&player.velocity)player.velocity.set(0,0,0);return;}return originalUpdatePhysics.apply(this,arguments);};}
+  if(originalUpdatePhysics){updatePhysics=function(dt){if(phoneOpen||npcDialogueOpen){if(typeof player!=='undefined'&&player.velocity)player.velocity.set(0,0,0);return;}return originalUpdatePhysics.apply(this,arguments);};}
   const originalInit=window.initGame;
   if(typeof originalInit==='function'){
     window.initGame=function(mode){const result=originalInit.apply(this,arguments);setTimeout(()=>{setupQuests();},80);return result;};
@@ -11013,10 +11138,11 @@
       checkNpcQuestCompletions();
       renderHud(false);
     }
-    checkWaypointArrival();syncLauncher();updatePhoneStatus();updateWaypointHud();updateWaypointBeacon(dt);updateMapLive();requestAnimationFrame(tick);
+    checkWaypointArrival();syncLauncher();updatePhoneStatus();updateWaypointHud();updateWaypointBeacon(dt);updateMapLive();updateNpcTalkPrompt();requestAnimationFrame(tick);
   }
   // Keep quest markers tied to each newly generated procedural city.
-  ensureNpcStore(); renderPhone(); syncLauncher(); requestAnimationFrame(tick);
+  ensureNpcStore(); ensureNpcTalkUi(); renderPhone(); syncLauncher(); requestAnimationFrame(tick);
+  window.__nrTalkToNpc = openNpcDialogue;
   // Photo quests, NPC texts and sharing are opened from the in-game phone launcher in Normal mode.
 })();
 </script>

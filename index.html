@@ -475,6 +475,15 @@
 .neon-mp-network-tools button:disabled{opacity:.5;cursor:wait}
 #neon-mp-network-result{font-size:11px;line-height:1.55;color:#a6c1d2;margin:9px 0 0;white-space:pre-line}
 #neon-mp-network-result[data-state="good"]{color:#76f2cf}#neon-mp-network-result[data-state="bad"]{color:#ffb1bb}
+.neon-mp-turn-config{margin-top:12px;border-top:1px solid rgba(116,185,211,.16);padding-top:10px;color:#a9c5d6;font-size:11px;line-height:1.5}
+.neon-mp-turn-config summary{cursor:pointer;color:#8ce9e3;font-weight:850;letter-spacing:.35px;padding:4px 0}
+.neon-mp-turn-config p{font-size:10px;line-height:1.5;color:#9bb6c8;margin:8px 0}
+.neon-mp-turn-config label{display:block;margin:10px 0 5px;color:#c7e8f5;font-size:9px;font-weight:900;letter-spacing:1px}
+#neon-mp-turn-api-url{display:block;box-sizing:border-box;width:100%;min-width:0;border:1px solid #345568;border-radius:8px;background:#04101b;color:#e6f8ff;padding:10px;font:11px/1.4 ui-monospace,Consolas,monospace;outline:none}
+#neon-mp-turn-api-url:focus{border-color:#67e8df;box-shadow:0 0 0 2px rgba(103,232,223,.1)}
+.neon-mp-turn-actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.neon-mp-turn-actions button{flex:1;min-width:125px}
+#neon-mp-turn-config-status[data-state="good"]{color:#76f2cf}#neon-mp-turn-config-status[data-state="bad"]{color:#ffb1bb}
 
 #neon-mp-status-dot{width:8px;height:8px;flex:none;border-radius:50%;background:#7d98ab;box-shadow:0 0 9px currentColor}
 #neon-mp-status[data-state="good"] #neon-mp-status-dot{background:#52ffd0;color:#52ffd0}
@@ -7645,6 +7654,17 @@
     <div class="neon-mp-network-tools">
       <button type="button" id="neon-mp-network-test" onclick="neonMPTestSchoolNetwork()">TEST SCHOOL / RESTRICTED NETWORK</button>
       <p id="neon-mp-network-result" role="status" aria-live="polite">Checks whether the room-signaling service and a TLS TURN relay on port 443 are reachable from this network.</p>
+      <details id="neon-mp-turn-config" class="neon-mp-turn-config">
+        <summary>Configure a reliable TURN relay (recommended if this test fails)</summary>
+        <p>Use the credential-scoped TURN API URL from your TURN provider dashboard (for example, Metered). This lets the game fetch valid relay credentials and use them for real multiplayer connections. Do not paste your provider account secret.</p>
+        <label for="neon-mp-turn-api-url">TURN credentials API URL</label>
+        <input id="neon-mp-turn-api-url" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://yourapp.metered.live/api/v1/turn/credentials?apiKey=…">
+        <div class="neon-mp-turn-actions">
+          <button type="button" id="neon-mp-turn-save" onclick="neonMPSaveTurnConfig()">SAVE & TEST CREDENTIALS</button>
+          <button type="button" id="neon-mp-turn-clear" onclick="neonMPClearTurnConfig()">CLEAR</button>
+        </div>
+        <p id="neon-mp-turn-config-status" role="status" aria-live="polite">No custom TURN credentials configured. The sample relay may time out or be unavailable.</p>
+      </details>
     </div>
     <div class="neon-mp-grid">
       <section class="neon-mp-step">
@@ -8818,6 +8838,87 @@ window.__neonLoadPeerFallback = function(){
     if (connected && typeof GAME_STARTED !== 'undefined' && GAME_STARTED) hud.style.display = 'block';
   }
 
+  // Optional provider-issued TURN credentials. Credential-scoped API URLs are intended
+  // for client use by the TURN provider; do not enter an account-wide secret here.
+  const NEON_TURN_API_URL_KEY = 'neonRunnerTurnCredentialApiUrl_v1';
+  const NEON_TURN_ICE_KEY = 'neonRunnerTurnIceServers_v1';
+  function readSavedNeonTurnIceServers() {
+    try {
+      const value = JSON.parse(localStorage.getItem(NEON_TURN_ICE_KEY) || 'null');
+      if (Array.isArray(value) && value.some(item => item && item.urls && /^(turn|turns):/i.test(Array.isArray(item.urls) ? item.urls.join(' ') : item.urls))) return value;
+    } catch (_) {}
+    return [];
+  }
+  function validateNeonTurnIceServers(payload) {
+    const list = Array.isArray(payload) ? payload : (payload && Array.isArray(payload.iceServers) ? payload.iceServers : null);
+    if (!list || !list.length) throw new Error('The API response did not contain an ICE server array. Copy the TURN credentials API URL from the provider dashboard.');
+    const usable = list.filter(item => item && item.urls && (typeof item.urls === 'string' || Array.isArray(item.urls)));
+    if (!usable.some(item => /^(turn|turns):/i.test(Array.isArray(item.urls) ? item.urls.join(' ') : item.urls))) {
+      throw new Error('The response did not include any TURN relay URLs. Check that this is the TURN credentials endpoint, not an account dashboard URL.');
+    }
+    return usable;
+  }
+  async function refreshNeonTurnCredentials() {
+    const apiUrl = String(localStorage.getItem(NEON_TURN_API_URL_KEY) || '').trim();
+    if (!apiUrl) return { configured: false, iceServers: [] };
+    let parsed;
+    try { parsed = new URL(apiUrl); } catch (_) { throw new Error('Enter a valid HTTPS TURN credentials API URL.'); }
+    if (parsed.protocol !== 'https:') throw new Error('For safety, the TURN credentials endpoint must use HTTPS.');
+    const response = await fetch(parsed.href, { method: 'GET', mode: 'cors', cache: 'no-store', credentials: 'omit' });
+    if (!response.ok) throw new Error('TURN credentials API returned HTTP ' + response.status + '. Check the URL/key and provider account.');
+    const payload = await response.json();
+    const iceServers = validateNeonTurnIceServers(payload);
+    localStorage.setItem(NEON_TURN_ICE_KEY, JSON.stringify(iceServers));
+    return { configured: true, iceServers };
+  }
+  function displayTurnConfigStatus(message, state) {
+    const el = document.getElementById('neon-mp-turn-config-status');
+    if (!el) return;
+    el.textContent = message;
+    el.dataset.state = state || 'idle';
+  }
+  window.neonMPSaveTurnConfig = async function() {
+    const input = document.getElementById('neon-mp-turn-api-url');
+    const button = document.getElementById('neon-mp-turn-save');
+    const raw = String(input && input.value || '').trim();
+    if (!raw) {
+      displayTurnConfigStatus('Paste your credential-scoped TURN API URL, or leave this blank to use the default relay list.', 'bad');
+      return;
+    }
+    try {
+      const parsed = new URL(raw);
+      if (parsed.protocol !== 'https:') throw new Error('Use an HTTPS URL from your TURN provider.');
+    } catch (err) {
+      displayTurnConfigStatus(err.message || 'Enter a valid HTTPS URL.', 'bad');
+      return;
+    }
+    localStorage.setItem(NEON_TURN_API_URL_KEY, raw);
+    if (button) button.disabled = true;
+    displayTurnConfigStatus('Fetching provider-issued TURN credentials…', 'idle');
+    try {
+      const loaded = await refreshNeonTurnCredentials();
+      const count = loaded.iceServers.reduce((sum, item) => sum + (Array.isArray(item.urls) ? item.urls : [item.urls]).filter(url => /^turns:/i.test(url)).length, 0);
+      displayTurnConfigStatus('Credentials loaded successfully. ' + loaded.iceServers.length + ' ICE server entries saved' + (count ? ', including ' + count + ' TLS TURN URL(s)' : '') + '. The network test and new room connections will use them.', 'good');
+    } catch (err) {
+      displayTurnConfigStatus('Could not load credentials: ' + (err.message || 'unknown error') + ' A cached configuration, if any, is retained.', 'bad');
+    } finally { if (button) button.disabled = false; }
+  };
+  window.neonMPClearTurnConfig = function() {
+    try { localStorage.removeItem(NEON_TURN_API_URL_KEY); localStorage.removeItem(NEON_TURN_ICE_KEY); } catch (_) {}
+    const input = document.getElementById('neon-mp-turn-api-url');
+    if (input) input.value = '';
+    displayTurnConfigStatus('Custom TURN credentials cleared. New connections will use the built-in fallback list.', 'idle');
+  };
+  (function restoreNeonTurnConfigUi() {
+    try {
+      const input = document.getElementById('neon-mp-turn-api-url');
+      const saved = localStorage.getItem(NEON_TURN_API_URL_KEY) || '';
+      if (input) input.value = saved;
+      if (saved && readSavedNeonTurnIceServers().length) displayTurnConfigStatus('A TURN API URL and cached relay configuration are saved. Click SAVE & TEST CREDENTIALS to refresh the credentials before playing.', 'good');
+      else if (saved) displayTurnConfigStatus('A TURN API URL is saved. Click SAVE & TEST CREDENTIALS to verify it.', 'idle');
+    } catch (_) {}
+  })();
+
   // Diagnostics for school / corporate networks: test signaling separately from a TURN-over-TLS relay.
   window.neonMPTestSchoolNetwork = async function() {
     const button = document.getElementById('neon-mp-network-test');
@@ -8868,6 +8969,20 @@ window.__neonLoadPeerFallback = function(){
       let probe;
       let done = false;
       let timer;
+      const configuredIce = readSavedNeonTurnIceServers();
+      const flattenUrls = item => (Array.isArray(item.urls) ? item.urls : [item.urls]).filter(Boolean);
+      // Only TLS/TCP port 443 URLs are used for this school-network test.
+      const providerTlsServers = configuredIce.flatMap(item => {
+        const tlsUrls = flattenUrls(item).filter(url => /^turns:/i.test(url) && /:443(?:\?|$)/i.test(url));
+        return tlsUrls.length ? [Object.assign({}, item, { urls: tlsUrls.length === 1 ? tlsUrls[0] : tlsUrls })] : [];
+      });
+      const relayServers = providerTlsServers.length ? providerTlsServers : [{
+        urls: 'turns:openrelay.metered.ca:443?transport=tcp',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      }];
+      const relaySource = providerTlsServers.length ? 'configured provider relay' : 'built-in public sample relay';
+      let lastIceError = '';
       const finish = value => {
         if (done) return;
         done = true;
@@ -8876,25 +8991,19 @@ window.__neonLoadPeerFallback = function(){
         resolve(value);
       };
       try {
-        probe = new RTC({
-          iceTransportPolicy: 'relay',
-          iceCandidatePoolSize: 0,
-          iceServers: [{
-            urls: 'turns:openrelay.metered.ca:443?transport=tcp',
-            username: 'openrelayproject',
-            credential: 'openrelayproject'
-          }]
-        });
+        probe = new RTC({ iceTransportPolicy: 'relay', iceCandidatePoolSize: 0, iceServers: relayServers });
         probe.createDataChannel('school-network-test');
         probe.onicecandidate = event => {
           if (event.candidate && event.candidate.type === 'relay') {
-            finish({ok:true, note:'TLS TURN relay candidate found on port 443.'});
+            finish({ok:true, note:'TLS TURN relay candidate found on port 443 (' + relaySource + ').'});
           } else if (!event.candidate) {
-            finish({ok:false, note:'No TLS relay candidate was gathered.'});
+            finish({ok:false, note:'No TLS relay candidate was gathered using the ' + relaySource + (lastIceError ? '. Last ICE error: ' + lastIceError : '.')});
           }
         };
-        probe.onicecandidateerror = () => {};
-        timer = setTimeout(() => finish({ok:false, note:'TLS TURN relay test timed out.'}), 10000);
+        probe.onicecandidateerror = event => {
+          lastIceError = [event.errorCode, event.errorText, event.url].filter(Boolean).join(' — ').slice(0, 260);
+        };
+        timer = setTimeout(() => finish({ok:false, note:'TLS TURN relay test timed out using the ' + relaySource + (lastIceError ? '. Last ICE error: ' + lastIceError : '. The relay may be unreachable, credentials may be invalid, or the school firewall may block TURN/TLS.')}), 12000);
         probe.createOffer().then(offer => probe.setLocalDescription(offer)).catch(err => {
           finish({ok:false, note:'TURN test error: ' + (err.message || 'could not create a connection offer')});
         });
@@ -8902,6 +9011,13 @@ window.__neonLoadPeerFallback = function(){
     });
 
     try {
+      const configuredUrl = String(localStorage.getItem(NEON_TURN_API_URL_KEY) || '').trim();
+      let credentialRefreshNote = '';
+      if (configuredUrl) {
+        result.textContent = 'Refreshing configured TURN credentials…';
+        try { await refreshNeonTurnCredentials(); credentialRefreshNote = 'Configured TURN credentials refreshed. '; }
+        catch (err) { credentialRefreshNote = 'TURN credential refresh failed (' + (err.message || 'unknown error') + '). Using cached/default relay entries. '; }
+      }
       const signaling = await testSignaling();
       result.textContent = '1/2 · ' + (signaling.ok ? 'PASS — ' : 'BLOCKED — ') + signaling.note + '\n2/2 · Testing TLS relay on TCP port 443…';
       const relay = await testTlsRelay();
@@ -8909,11 +9025,12 @@ window.__neonLoadPeerFallback = function(){
         (signaling.ok ? 'PASS' : 'FAIL') + ' · Signaling: ' + signaling.note,
         (relay.ok ? 'PASS' : 'FAIL') + ' · TURN/TLS: ' + relay.note
       ];
+      if (credentialRefreshNote) lines.unshift(credentialRefreshNote.trim());
       if (signaling.ok && relay.ok) {
         lines.push('This network passed both checks. Multiplayer can still fail if the school blocks the game host/CDNs or applies additional policies.');
         result.dataset.state = 'good';
       } else {
-        lines.push('If the school intentionally blocks these services, only the school administrator or a permitted alternative network can resolve it.');
+        lines.push('A TURN/TLS failure is not conclusive by itself: the built-in sample relay or its demo credentials may be unavailable. Configure a provider-issued TURN credentials URL above, test again, and use only networks/services permitted by the school.');
         result.dataset.state = 'bad';
       }
       result.textContent = lines.join('\n');
@@ -9143,26 +9260,24 @@ window.__neonLoadPeerFallback = function(){
     return (h >>> 0) || 1;
   }
   function peerOptions() {
-    // STUN handles ordinary NATs; TURN relays the encrypted WebRTC packets when
-    // the two players cannot establish a direct route (common on mobile networks).
-    // Public relay availability/quotas are external and can change, so STUN remains too.
+    // Provider-issued TURN entries are preferred and combined with public fallbacks.
+    // This is important on restrictive networks where direct/STUN paths are blocked.
+    const defaults = [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun.cloudflare.com:3478' },
+      { urls: 'stun:openrelay.metered.ca:80' },
+      { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:80?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turns:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+    ];
+    const configured = readSavedNeonTurnIceServers();
+    const iceServers = configured.length ? configured.concat(defaults) : defaults;
     return {
       host: '0.peerjs.com', port: 443, path: '/', secure: true, debug: 1,
       pingInterval: 5000,
-      config: {
-        iceCandidatePoolSize: 8,
-        iceTransportPolicy: 'all',
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun.cloudflare.com:3478' },
-          { urls: 'stun:openrelay.metered.ca:80' },
-          { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-          { urls: 'turn:openrelay.metered.ca:80?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-          { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-          { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-          { urls: 'turns:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
-        ]
-      }
+      config: { iceCandidatePoolSize: 8, iceTransportPolicy: 'all', iceServers }
     };
   }
   function humanizePeerError(err) {
@@ -9236,8 +9351,12 @@ window.__neonLoadPeerFallback = function(){
   window.neonMPCopyRoomCode = function() { window.neonMPCopy('neon-mp-room-output'); };
   window.neonMPApplyAnswer = function() { setStatus('No answer code needed anymore. Share the 6-character room code instead.', 'idle'); };
 
-  window.neonMPCreateOffer = function() {
+  window.neonMPCreateOffer = async function() {
     if (!window.Peer) { setStatus('Could not load PeerJS. Check your internet connection and reload this HTML.', 'bad'); return; }
+    if (localStorage.getItem(NEON_TURN_API_URL_KEY)) {
+      try { setStatus('Refreshing TURN relay credentials…', 'idle'); await refreshNeonTurnCredentials(); }
+      catch (err) { displayTurnConfigStatus('Credential refresh failed: ' + (err.message || 'unknown error') + '. Using saved relay entries if available.', 'bad'); }
+    }
     closePeer(true);
     isHost = true;
     connected = false;
@@ -9295,8 +9414,12 @@ window.__neonLoadPeerFallback = function(){
     tryCreate();
   };
 
-  window.neonMPCreateAnswer = function() {
+  window.neonMPCreateAnswer = async function() {
     if (!window.Peer) { setStatus('Could not load PeerJS. Check your internet connection and reload this HTML.', 'bad'); return; }
+    if (localStorage.getItem(NEON_TURN_API_URL_KEY)) {
+      try { setStatus('Refreshing TURN relay credentials…', 'idle'); await refreshNeonTurnCredentials(); }
+      catch (err) { displayTurnConfigStatus('Credential refresh failed: ' + (err.message || 'unknown error') + '. Using saved relay entries if available.', 'bad'); }
+    }
     const code = normalizeRoomCode(document.getElementById('neon-mp-join-code').value);
     document.getElementById('neon-mp-join-code').value = code;
     if (code.length !== 6) { setStatus('Enter the full 6-character room code from your friend.', 'bad'); return; }

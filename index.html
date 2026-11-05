@@ -20,7 +20,7 @@ function isAuthorized(){
  let path=window.location.pathname.toLowerCase();
  while(path.length>1&&path.endsWith('/'))path=path.slice(0,-1);
  const approved=host==='bex-creator.github.io'&&allowedProjects.some(p=>path===p||path.startsWith(p+'/'));
- return approved||host==='localhost'||host==='127.0.0.1';
+ return approved||host==='localhost'||host==='127.0.0.1'||window.location.protocol==='file:';
 }
 function decode(encoded){const binary=atob(encoded);const bytes=Uint8Array.from(binary,c=>c.charCodeAt(0));return new TextDecoder().decode(bytes);}
 function showLocked(){document.body.innerHTML='<main class="locked-message"><h2>Unauthorized Host</h2><p>This content is restricted to approved Bex-Creator project URLs.</p></main>';}

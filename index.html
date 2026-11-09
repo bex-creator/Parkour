@@ -16,10 +16,10 @@
                 // Convert current URL to lowercase to prevent capitalization errors
                 const currentHref = window.location.href.toLowerCase();
                 
-                // Check against BOTH domains and local testing environments
+                // Check against allowed domains and local testing environments
                 const isValid = currentHref.includes("bex-creator.github.io/nexus-store") || 
                                 currentHref.includes("bex-creator.github.io/chat") || 
-                                currentHref.includes("https://bex-creator.github.io/Parkour") || 
+                                currentHref.includes("bex-creator.github.io/parkour") || 
                                 currentHref.includes("127.0.0.1") || 
                                 currentHref.includes("localhost");
                 
